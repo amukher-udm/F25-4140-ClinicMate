@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc caches
+.npm
+.eslintcache
+.vite/
+.cache/
+
+# Tests / coverage
+coverage/
+*.lcov
+
+#TypeScript
+*.tsbuildinfo
+
+# Vite / tooling caches
+.vite/
+.cache/
+
+
+# Mac/Linux temp files
+*.pid
+*.seed
+*.pid.lock
+
+#switch package managers
+yarn.lock
+pnpm-lock.yaml
+.pnpm-debug.log*
