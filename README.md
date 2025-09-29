@@ -1,9 +1,8 @@
-# Monorepo Application
+# ClinicMate v1.0
 
-A full-stack web application using React and Express in a monorepo structure.
+A full-stack web application using React+Express .
 
 ## Tech Stack
-
 - **Frontend**: React + Vite
 - **Backend**: Node.js + Express
 - **Development**: vite-express (serves Vite as Express middleware)
