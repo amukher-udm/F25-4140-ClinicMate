@@ -40,7 +40,6 @@ npm start
 ```
 
 ## Project Structure
-
 - `packages/client/` - React frontend application
 - `packages/server/` - Express backend API
 - `package.json` - Root package.json with workspace configuration
