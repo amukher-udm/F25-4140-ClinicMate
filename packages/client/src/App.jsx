@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import './Auth.css';
+import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
 
 function App() {
   const [data, setData] = useState(null);
-
+  const path = window.location.pathname;
 
   useEffect(() => {
     fetch('/api/health')
@@ -13,6 +17,18 @@ function App() {
       })
       .catch(err => console.error('Error:', err));
   }, []);
+
+  if (path === '/login'){
+    return <Login />;
+  }
+
+  if (path === '/signup'){
+    return <Signup />;
+  }
+
+  if (path === '/forgot-password'){
+    return <ForgotPassword />;
+  }
 
   return (
     <div className="App">
