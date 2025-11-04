@@ -11,6 +11,13 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
+    ,"react-router-dom": "^6.14.1",
+    "@supabase/supabase-js": "^2.35.0"
+  },
+  "dependenciesMeta": {
+    "@supabase/supabase-js": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
