@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-
 import ViteExpress from 'vite-express';
 import dotenv from 'dotenv';
 import { dirname } from 'node:path';
