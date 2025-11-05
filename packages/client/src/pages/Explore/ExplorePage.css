@@ -1,0 +1,177 @@
+/* ================================
+   ExplorePage styles
+   ================================ */
+
+/* ---- Explore Hero Section ---- */
+.explore-hero {
+  padding: 60px 0 40px;
+  text-align: center;
+}
+
+.explore-hero h1 {
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.2;
+  color: var(--slate-900);
+  margin-bottom: 16px;
+}
+
+.explore-hero p {
+  font-size: 1.125rem;
+  color: var(--slate-600);
+  margin-bottom: 24px;
+}
+
+/* ---- View Toggle Switch ---- */
+.view-toggle {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.toggle-btn {
+  padding: 12px 32px;
+  border: 2px solid var(--slate-200);
+  background: white;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--slate-600);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-btn:hover {
+  border-color: var(--indigo-300);
+  background: var(--indigo-50);
+  color: var(--slate-800);
+}
+
+.toggle-btn.active {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+  box-shadow: var(--shadow-soft);
+}
+
+.toggle-btn.active:hover {
+  filter: brightness(0.95);
+}
+
+/* ---- Search Container ---- */
+.search-container {
+  display: flex;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.search-container input {
+  flex: 1;
+  height: 48px;
+  padding: 0 20px;
+  border: 1px solid var(--slate-300);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.search-container input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--indigo-100);
+}
+
+.search-container input::placeholder {
+  color: var(--slate-400);
+}
+
+/* ---- Explore Grid Section ---- */
+.explore-grid {
+  padding: 40px 0 60px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+/* ---- Provider Cards ---- */
+.provider-card {
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  border-radius: 16px;
+  padding: 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.provider-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.provider-card.hospital-card {
+  border-left: 4px solid var(--indigo-500);
+  background: linear-gradient(to bottom right, #ffffff, #f8fafc);
+}
+
+.provider-card h3 {
+  font-size: 1.25rem;
+  color: var(--slate-900);
+  margin-bottom: 8px;
+}
+
+.provider-card p {
+  color: var(--slate-600);
+  margin-bottom: 8px;
+  font-size: 0.9375rem;
+}
+
+.provider-card p:last-of-type {
+  margin-bottom: 16px;
+}
+
+.provider-card .btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* ---- Responsive Design ---- */
+@media (max-width: 768px) {
+  .explore-hero {
+    padding: 40px 0 32px;
+  }
+
+  .explore-hero h1 {
+    font-size: 28px;
+  }
+
+  .view-toggle {
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 32px;
+  }
+
+  .toggle-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-container {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-container input,
+  .search-container button {
+    width: 100%;
+  }
+
+  .explore-grid {
+    grid-template-columns: 1fr;
+    padding: 32px 0 40px;
+  }
+}

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export default function CTA() {
     return (
       <section className="cta">
@@ -6,7 +8,7 @@ export default function CTA() {
             <div className="cta-title">Continue your care</div>
             <div className="cta-sub">Need a specialist? Browse doctors and clinics.</div>
           </div>
-          <button className="btn btn-primary-outline">Explore providers</button>
+          <Link to="/explore" className="btn btn-primary-outline">Explore providers</Link>
         </div>
       </section>
     );
