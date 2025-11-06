@@ -36,6 +36,8 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
 
+// API route to get profile data from 'patients' table
+// Returns an array of patient objects 
 app.get('/api/profile_data', async (req, res) => {
   const { data, error } = await supabase
   .from('patients')
@@ -44,7 +46,6 @@ app.get('/api/profile_data', async (req, res) => {
     console.error('Error fetching patients:', error);
     return res.status(500).json({ error: 'Failed to fetch patients' });
   }
-  console.log('Patients data:', data);
   res.json({ patients: data });
 })
 
