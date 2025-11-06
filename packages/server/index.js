@@ -31,6 +31,14 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
 
+app.get('/api/explore_page',(req,res)=>{
+  const hospital =[]
+  const doctor=[]
+  res.json({
+
+  });
+});
+
 if (isDev) {
     // --- Development: use vite-express to run Vite as middleware ---
     const frontendRoot = path.resolve(__dirname, '../client');
