@@ -4,7 +4,7 @@ import ViteExpress from 'vite-express';
 import dotenv from 'dotenv';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config(); //configures process.env from .env file
@@ -37,7 +37,6 @@ app.get('/api/test', (req, res) => {
 });
 
 app.get('/api/profile_data', async (req, res) => {
-  patients = []
   const { data, error } = await supabase
   .from('patients')
   .select();
@@ -46,7 +45,7 @@ app.get('/api/profile_data', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch patients' });
   }
   console.log('Patients data:', data);
-  res.json({});
+  res.json({ patients: data });
 })
 
 if (isDev) {
