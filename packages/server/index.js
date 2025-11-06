@@ -31,12 +31,23 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
 
-app.get('/api/explore_page',(req,res)=>{
-  const hospital =[]
-  const doctor=[]
-  res.json({
-
-  });
+app.get('/api/explore_page', async (req, res) => {
+  const { zip } = req.query;
+  try {
+    const { data: hospitals } = await supabase
+      .from('hospital')
+      .select('*')
+      .ilike('zip', `%${zip || ''}%`);
+    
+    const { data: doctors } = await supabase
+      .from('doctor')
+      .select('*')
+      .in('hospital_id', hospitals.map(h => h.id));
+    
+    res.json({ hospitals, doctors });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 if (isDev) {
