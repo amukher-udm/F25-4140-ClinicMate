@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config()
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config(); //configures process.env from .env file
@@ -37,8 +36,16 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
 
-app.get('/api/profile_data', (req, res) => {
-  hospitals = []
+app.get('/api/profile_data', async (req, res) => {
+  patients = []
+  const { data, error } = await supabase
+  .from('patients')
+  .select();
+  if (error) {
+    console.error('Error fetching patients:', error);
+    return res.status(500).json({ error: 'Failed to fetch patients' });
+  }
+  console.log('Patients data:', data);
   res.json({});
 })
 
