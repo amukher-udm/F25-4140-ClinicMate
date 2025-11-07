@@ -10,6 +10,9 @@ import Login from './pages/Auth/Login.jsx';
 import ForgotPassword from './pages/Auth/ForgotPassword.jsx';
 import Signup from './pages/Auth/Signup.jsx';
 import { AuthProvider } from './state/AuthContext.jsx';
+import HelpPage from './pages/Help/HelpPage.jsx';
+import PrivacyPolicy from './pages/Legal/PrivacyPolicy.jsx';
+import Terms from './pages/Legal/Terms.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -22,6 +25,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
         </Routes>
       </Router>
     </AuthProvider>
