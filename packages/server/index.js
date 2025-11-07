@@ -141,16 +141,21 @@ app.post('/api/log_in', async (req, res) => {//Log in api
 app.get('/api/explore_page', async (req, res) => {
   
   try {
-    const { hospitals, error } = await supabase
+   const { data: hospitals, error: hospitalError } = await supabase
     .from('hospitals')
     .select(
       `
       *,
       ...address!inner()
       `,
-    )
+    );
 
-    const { doctors, error2 } = await supabase
+    if (hospitalError) {
+      console.error('Error fetching hospitals:', hospitalError);
+      return res.status(500).json({ error: 'Failed to fetch hospitals' });
+    }
+
+    const { data: doctors, error: doctorError } = await supabase
     .from('doctors')
     .select(
       `
@@ -161,9 +166,14 @@ app.get('/api/explore_page', async (req, res) => {
       ...specialty!inner()
       `,
     )
+    if (doctorError) {
+      console.error('Error fetching doctors:', doctorError);
+      return res.status(500).json({ error: 'Failed to fetch doctors' });
+    }
     
     res.json({ hospitals, doctors });
   } catch (err) {
+    console.error('Unexpected error in /api/explore_page:', err);
     res.status(500).json({ error: err.message });
   }
 });
