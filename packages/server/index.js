@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
-require('dotenv').config()
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config(); //configures process.env from .env file
