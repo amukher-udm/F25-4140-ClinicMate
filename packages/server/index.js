@@ -70,6 +70,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
+//Sign up expecting {email,password,first_name,last_name} from form
 app.post('/api/sign-up', async (req, res) => {//Sign up api
   const formData = req.body
   const { data, error } = await supabase.auth.signUp({
@@ -79,13 +80,24 @@ app.post('/api/sign-up', async (req, res) => {//Sign up api
       // Optional: Specify a redirect URL after email confirmation
       emailRedirectTo: 'http://localhost:3000/Profile'
     }
+
   });
 
   if (error) {
     return res.status(400).json({ error: error.message });
   }
-  return res.json({ message: 'Sign-in successful' }, { status: 200 })
+  else {
+    const { data2, error2 } = await supabase
+      .from('patients')
+      .upsert({ id: data.user.uuid, first_name: formData.first_name, last_name: formData.last_name })
+      .select()
+    if (error2) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.json({ message: 'Sign-in successful' }, { status: 200 })
+  }
 });
+//Log in api expects {email,password}
 app.post('/api/log-in', async (req, res) => {//Log in api
   const formData = req.body
   const email = formData.email;
@@ -99,6 +111,8 @@ app.post('/api/log-in', async (req, res) => {//Log in api
       emailRedirectTo: 'http://localhost:3000/Profile'
     }
   });
+
+  //Block editables
 
   if (error) {
     return res.status(400).json({ error: error.message });
