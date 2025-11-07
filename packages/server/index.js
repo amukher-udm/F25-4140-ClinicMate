@@ -14,10 +14,6 @@ const app = express(); // initilize express app
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV !== 'production';
 
-// Connect to the database
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Middleware
 app.use(express.json());
