@@ -32,13 +32,16 @@ app.get('/api/test', (req, res) => {
 });
 
 app.get('/api/explore_page', async (req, res) => {
-  const { zip } = req.query;
+  
   try {
-    const { data: hospitals } = await supabase
-      .from('hospital')
-      .select('*')
-      .ilike('zip', `%${zip || ''}%`);
-    
+    const { hospitals, error } = await supabase
+    .from('hospitals')
+    .select(
+      `
+      *,
+      ...address!inner()
+      `,
+    )
     const { data: doctors } = await supabase
       .from('doctor')
       .select('*')
