@@ -42,10 +42,18 @@ app.get('/api/explore_page', async (req, res) => {
       ...address!inner()
       `,
     )
-    const { data: doctors } = await supabase
-      .from('doctor')
-      .select('*')
-      .in('hospital_id', hospitals.map(h => h.id));
+
+    const { data, error2 } = await supabase
+    .from('doctors')
+    .select(
+      `
+      *,
+      ...hospitals!inner(
+        ...address!inner()
+      ),
+      ...specialty!inner()
+      `,
+    )
     
     res.json({ hospitals, doctors });
   } catch (err) {
