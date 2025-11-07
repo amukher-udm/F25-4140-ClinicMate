@@ -95,7 +95,81 @@ app.get('/api/profile_data', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch patients' });
   }
   res.json({ patients: data[0] });
+});
+
+//Sign up expecting {email,password,first_name,last_name} from form
+app.post('/api/sign_up', async (req, res) => {//Sign up api
+  const formData = req.body
+  const { data, error } = await supabase.auth.signUp({
+    email: formData.email,
+    password: formData.password,
+    options: {
+      // Optional: Specify a redirect URL after email confirmation
+      emailRedirectTo: 'http://localhost:3000/Profile'
+    }
+
+  });
+
+  if (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  else {
+    const { data2, error2 } = await supabase
+      .from('patients')
+      .upsert({ id: data.user.uuid, first_name: formData.first_name, last_name: formData.last_name })
+      .select()
+    if (error2) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.json({ message: 'Sign-in successful' }, { status: 200 })
+  }
+});
+//Log in api expects {email,password}
+app.post('/api/log_in', async (req, res) => {//Log in api
+  const formData = req.body
+  const email = formData.email;
+  const password = formData.password;
+
+  const { error } = await _supabase.auth.signInWithPassword({
+    email: email,
+    password: password,
+    options: {
+      // Optional: Specify a redirect URL after email confirmation
+      emailRedirectTo: 'http://localhost:3000/Profile'
+    }
 })
+});
+
+app.get('/api/explore_page', async (req, res) => {
+  
+  try {
+    const { hospitals, error } = await supabase
+    .from('hospitals')
+    .select(
+      `
+      *,
+      ...address!inner()
+      `,
+    )
+
+    const { doctors, error2 } = await supabase
+    .from('doctors')
+    .select(
+      `
+      *,
+      ...hospitals!inner(
+        ...address!inner()
+      ),
+      ...specialty!inner()
+      `,
+    )
+    
+    res.json({ hospitals, doctors });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 if (isDev) {
   // --- Development: use vite-express to run Vite as middleware ---
