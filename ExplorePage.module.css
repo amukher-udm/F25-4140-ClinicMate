@@ -1,0 +1,362 @@
+/* Explore Page Animations */
+.exploreContainer {
+    opacity: 0;
+  }
+  
+  .fadeIn {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .fadeInUp {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Main Container */
+  .container {
+      padding: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+  }
+  
+  .header {
+      margin-bottom: 24px;
+  }
+  
+  .title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+  }
+  
+  .subtitle {
+      color: #666;
+      font-size: 16px;
+      margin-bottom: 24px;
+  }
+  
+  .searchBar {
+      position: relative;
+      margin-bottom: 24px;
+  }
+  
+  .searchInput {
+      width: 100%;
+      padding: 16px;
+      padding-left: 48px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+  }
+  
+  .searchInput:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .searchIcon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+  }
+  
+  .viewToggle {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+  }
+  
+  .toggleButton {
+      flex: 1;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      background: #f3f4f6;
+      color: #6b7280;
+      transition: all 0.2s;
+  }
+  
+  .toggleButton:hover {
+      background: #e5e7eb;
+  }
+  
+  .toggleButton.active {
+      background: #2563eb;
+      color: white;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  }
+  
+  .filters {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+  }
+  
+  .filterChip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+  }
+  
+  .filterChip:hover {
+      background: #e5e7eb;
+  }
+  
+  .filterChip.active {
+      background: #dbeafe;
+      border-color: #2563eb;
+      color: #2563eb;
+  }
+  
+  .content {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+  }
+  
+  .listView {
+      flex: 1;
+  }
+  
+  .mapPreview {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 16px;
+      height: 400px;
+      position: sticky;
+      top: 24px;
+  }
+  
+  .resultCard {
+      display: flex;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+      background: white;
+  }
+  
+  .resultCard:hover {
+      border-color: #2563eb;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+  }
+  
+  .cardImage {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      background: #e5e7eb;
+      margin-right: 16px;
+      flex-shrink: 0;
+  }
+  
+  .cardContent {
+      flex: 1;
+  }
+  
+  .cardHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+  }
+  
+  .cardTitle {
+      font-size: 18px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin: 0;
+  }
+  
+  .cardButton {
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+  }
+  
+  .cardButton:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+  }
+  
+  .cardButton:active {
+      transform: translateY(0);
+  }
+  
+  .cardDetails {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 8px;
+  }
+  
+  .details {
+      color: #666;
+      font-size: 14px;
+  }
+  
+  .doctorCard {
+      display: flex;
+      align-items: flex-start;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      background: white;
+      transition: all 0.2s;
+  }
+  
+  .doctorCard:hover {
+      border-color: #2563eb;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+  }
+  
+  .doctorAvatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      margin-right: 16px;
+      flex-shrink: 0;
+  }
+  
+  .bookingPanel {
+      margin-top: 16px;
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+  }
+  
+  .bookingPanel h4 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+  }
+  
+  .bookingPanel p {
+      margin: 0 0 12px 0;
+      color: #666;
+  }
+  
+  .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 16px;
+  }
+  
+  .error {
+      text-align: center;
+      padding: 40px;
+      color: #dc2626;
+      font-size: 16px;
+      background: #fef2f2;
+      border-radius: 12px;
+      border: 1px solid #fca5a5;
+  }
+  
+  .noResults {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 16px;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+      .content {
+          grid-template-columns: 1fr;
+      }
+      .mapPreview {
+          display: none;
+      }
+  }
+  
+  @media (max-width: 640px) {
+      .container {
+          padding: 16px;
+      }
+      
+      .title {
+          font-size: 24px;
+      }
+      
+      .viewToggle {
+          flex-direction: column;
+      }
+      
+      .filters {
+          flex-wrap: wrap;
+      }
+      
+      .resultCard,
+      .doctorCard {
+          flex-direction: column;
+      }
+      
+      .cardImage,
+      .doctorAvatar {
+          margin-right: 0;
+          margin-bottom: 12px;
+      }
+  }
+  
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+      .fadeIn,
+      .fadeInUp,
+      .resultCard,
+      .doctorCard,
+      .toggleButton,
+      .filterChip,
+      .cardButton {
+          animation: none !important;
+          transition: none !important;
+      }
+  }

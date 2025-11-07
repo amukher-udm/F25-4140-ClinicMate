@@ -1,10 +1,11 @@
 import express from 'express';
 import path from 'path';
-
 import ViteExpress from 'vite-express';
 import dotenv from 'dotenv';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config()
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config(); //configures process.env from .env file
@@ -12,6 +13,11 @@ dotenv.config(); //configures process.env from .env file
 const app = express(); // initilize express app
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV !== 'production';
+
+// Connect to the database
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Middleware
 app.use(express.json());
@@ -30,6 +36,11 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
+
+app.get('/api/profile_data', (req, res) => {
+  hospitals = []
+  res.json({});
+})
 
 app.get('/api/explore_page', async (req, res) => {
   
