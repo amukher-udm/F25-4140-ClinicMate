@@ -130,7 +130,7 @@ app.post('/api/log_in', async (req, res) => {//Log in api
   const email = formData.email;
   const password = formData.password;
 
-  const { error } = await _supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email: email,
     password: password,
     options: {
