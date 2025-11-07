@@ -54,7 +54,7 @@ app.get('/api/explore_page', async (req, res) => {
       `,
     )
 
-    const { data, error2 } = await supabase
+    const { doctors, error2 } = await supabase
     .from('doctors')
     .select(
       `
