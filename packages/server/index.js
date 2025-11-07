@@ -77,14 +77,24 @@ app.get('/api/test', (req, res) => {
 // API route to get profile data from 'patients' table
 // Returns an array of patient objects 
 app.get('/api/profile_data', async (req, res) => {
+  const user_id = req.query.user_id;
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id query parameter is required' });
+  }
   const { data, error } = await supabase
   .from('patients')
-  .select();
+  .select(
+    `
+    *,
+    address: address_fk!inner(*)
+    `
+  )
+  .eq('user_id', user_id);
   if (error) {
     console.error('Error fetching patients:', error);
     return res.status(500).json({ error: 'Failed to fetch patients' });
   }
-  res.json({ patients: data });
+  res.json({ patients: data[0] });
 })
 
 if (isDev) {
