@@ -1,0 +1,20 @@
+:root {
+    --indigo-50: #EEF2FF;
+    --indigo-100: #E0E7FF;
+    --indigo-600: #6366F1;
+    --indigo-700: #4F46E5;
+  
+    --slate-900: #0F172A;
+    --slate-700: #334155;
+    --slate-600: #475569;
+  
+    --brand: var(--indigo-700);
+    --brand-contrast: #fff;
+  
+    --radius-lg: 18px;
+    --radius-md: 14px;
+  
+    --shadow-soft: 0 10px 24px rgba(99, 102, 241, 0.10);
+    --shadow-card: 0 6px 18px rgba(2, 6, 23, 0.08);
+  }
+  
