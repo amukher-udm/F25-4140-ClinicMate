@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { useAuth } from "../../state/AuthContext.jsx";
 import "./ExplorePage.css";
 
 /* ---------- Helpers ---------- */
@@ -76,28 +74,11 @@ async function fetchExploreData() {
   }
 
   const json = await res.json();
-  console.log("=== FIRST HOSPITAL ===");
-  console.log(JSON.stringify(json.hospitals[0], null, 2));
-  console.log("=== FIRST DOCTOR ===");
-  console.log(JSON.stringify(json.doctors[0], null, 2));
   return { hospitals: json.hospitals ?? [], doctors: json.doctors ?? [] };
 }
 
 /* ---------------- Page ---------------- */
 export default function ExplorePage() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const locationRouter = useLocation();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login", {
-        replace: true,
-        state: { from: locationRouter.pathname },
-      });
-    }
-  }, [authLoading, user, navigate, locationRouter.pathname]);
-
   const [viewType, setViewType] = useState("doctors");
   const [doctors, setDoctors] = useState(null);
   const [hospitals, setHospitals] = useState(null);
@@ -105,9 +86,8 @@ export default function ExplorePage() {
   const [errorMsg, setErrorMsg] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Load data on mount - no auth required
   useEffect(() => {
-    if (authLoading || !user) return;
-
     let cancelled = false;
 
     async function load() {
@@ -133,7 +113,7 @@ export default function ExplorePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user]);
+  }, []);
 
   const list = useMemo(() => {
     const base = viewType === "doctors" ? doctors : hospitals;
@@ -157,23 +137,6 @@ export default function ExplorePage() {
       setSearchTerm("");
     }
   };
-
-  if (authLoading) {
-    return (
-      <>
-        <Navbar />
-        <main className="container">
-          <section className="explore-hero">
-            <h1>Find Your Healthcare Provider</h1>
-            <p>Loading your session…</p>
-          </section>
-        </main>
-        <Footer />
-      </>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>

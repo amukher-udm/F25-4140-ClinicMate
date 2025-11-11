@@ -76,7 +76,7 @@ app.get('/api/test', (req, res) => {
 app.post('/api/sign_up', async (req, res) => {
   const formData = req.body;
   
-  console.log('📝 Signup data received:', formData); // This will show you the actual data
+  console.log('📝 Signup data received:', formData);
   
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -98,15 +98,55 @@ app.post('/api/sign_up', async (req, res) => {
     }
 
     console.log('✅ Auth user created:', data.user.id);
-    console.log('📋 Form data:', formData); // See what we received
 
-    const { error: patientError } = await supabase
+    // Check if patient already exists
+    const { data: existingPatient } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('user_id', data.user.id)
+      .maybeSingle();
+
+    if (existingPatient) {
+      console.log('ℹ️ Patient already exists:', existingPatient);
+      // If missing names, update them
+      if (!existingPatient.first_name || !existingPatient.last_name) {
+        console.log('🔄 Updating missing names...');
+        const { error: updateError } = await supabase
+          .from('patients')
+          .update({
+            first_name: formData.first_name,
+            last_name: formData.last_name
+          })
+          .eq('user_id', data.user.id);
+        
+        if (updateError) {
+          console.error('❌ Failed to update names:', updateError);
+        } else {
+          console.log('✅ Names updated successfully');
+        }
+      }
+      
+      return res.json({ 
+        message: 'Sign-up successful',
+        session: data.session 
+      });
+    }
+
+    // Create new patient
+    console.log('➕ Inserting patient with:', {
+      user_id: data.user.id,
+      first_name: formData.first_name,
+      last_name: formData.last_name
+    });
+
+    const { data: insertedPatient, error: patientError } = await supabase
       .from('patients')
       .insert({ 
         user_id: data.user.id, 
-        first_name: formData.first_name,  // AuthContext sends snake_case
-        last_name: formData.last_name     // AuthContext sends snake_case
-      });
+        first_name: formData.first_name,
+        last_name: formData.last_name
+      })
+      .select();
       
     if (patientError) {
       console.error('❌ Patient insert error:', patientError);
@@ -115,7 +155,7 @@ app.post('/api/sign_up', async (req, res) => {
       });
     }
 
-    console.log('✅ Patient record created with names:', formData.first_name, formData.last_name);
+    console.log('✅ Patient record created:', insertedPatient);
     
     return res.json({ 
       message: 'Sign-up successful',
