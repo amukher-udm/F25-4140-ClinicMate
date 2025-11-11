@@ -75,9 +75,9 @@ app.get('/api/test', (req, res) => {
 // Sign up - create auth user and patient record
 app.post('/api/sign_up', async (req, res) => {
   const formData = req.body;
-  
-  console.log('📝 Signup data received:', formData);
-  
+
+  console.log('Signup data received:', formData);
+
   try {
     const { data, error } = await supabase.auth.signUp({
       email: formData.email,
@@ -88,16 +88,16 @@ app.post('/api/sign_up', async (req, res) => {
     });
 
     if (error) {
-      console.error('❌ Auth signup error:', error);
+      console.error(' Auth signup error:', error);
       return res.status(400).json({ error: error.message });
     }
 
     if (!data.user) {
-      console.error('❌ No user returned from signup');
+      console.error(' No user returned from signup');
       return res.status(400).json({ error: 'Failed to create user' });
     }
 
-    console.log('✅ Auth user created:', data.user.id);
+    console.log('Auth user created:', data.user.id);
 
     // Check if patient already exists
     const { data: existingPatient } = await supabase
@@ -107,10 +107,10 @@ app.post('/api/sign_up', async (req, res) => {
       .maybeSingle();
 
     if (existingPatient) {
-      console.log('ℹ️ Patient already exists:', existingPatient);
+      console.log('Patient already exists:', existingPatient);
       // If missing names, update them
       if (!existingPatient.first_name || !existingPatient.last_name) {
-        console.log('🔄 Updating missing names...');
+        console.log('Updating missing names...');
         const { error: updateError } = await supabase
           .from('patients')
           .update({
@@ -118,22 +118,22 @@ app.post('/api/sign_up', async (req, res) => {
             last_name: formData.last_name
           })
           .eq('user_id', data.user.id);
-        
+
         if (updateError) {
-          console.error('❌ Failed to update names:', updateError);
+          console.error('Failed to update names:', updateError);
         } else {
-          console.log('✅ Names updated successfully');
+          console.log('Names updated successfully');
         }
       }
-      
-      return res.json({ 
+
+      return res.json({
         message: 'Sign-up successful',
-        session: data.session 
+        session: data.session
       });
     }
 
     // Create new patient
-    console.log('➕ Inserting patient with:', {
+    console.log(' Inserting patient with:', {
       user_id: data.user.id,
       first_name: formData.first_name,
       last_name: formData.last_name
@@ -141,28 +141,28 @@ app.post('/api/sign_up', async (req, res) => {
 
     const { data: insertedPatient, error: patientError } = await supabase
       .from('patients')
-      .insert({ 
-        user_id: data.user.id, 
+      .insert({
+        user_id: data.user.id,
         first_name: formData.first_name,
         last_name: formData.last_name
       })
       .select();
-      
+
     if (patientError) {
-      console.error('❌ Patient insert error:', patientError);
-      return res.status(400).json({ 
-        error: 'Account created but profile setup failed.' 
+      console.error('Patient insert error:', patientError);
+      return res.status(400).json({
+        error: 'Account created but profile setup failed.'
       });
     }
 
-    console.log('✅ Patient record created:', insertedPatient);
-    
-    return res.json({ 
+    console.log(' Patient record created:', insertedPatient);
+
+    return res.json({
       message: 'Sign-up successful',
-      session: data.session 
+      session: data.session
     });
   } catch (err) {
-    console.error('💥 Unexpected signup error:', err);
+    console.error('Unexpected signup error:', err);
     return res.status(500).json({ error: 'Server error during signup' });
   }
 });
@@ -174,14 +174,14 @@ app.post('/api/log_in', async (req, res) => {
     email: formData.email,
     password: formData.password,
   });
-  
+
   if (error) {
     return res.status(400).json({ error: error.message });
   }
-  
-  return res.json({ 
+
+  return res.json({
     message: 'Login successful',
-    session: data.session 
+    session: data.session
   });
 });
 
@@ -189,28 +189,28 @@ app.post('/api/log_in', async (req, res) => {
 app.post('/api/log_out', checkAuth, async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader.split(' ')[1];
-  
+
   const { error } = await supabase.auth.signOut(token);
-  
+
   if (error) {
     return res.status(400).json({ error: error.message });
   }
-  
+
   return res.json({ message: 'Logout successful' });
 });
 
 // Reset password
 app.post('/api/reset_password', async (req, res) => {
   const { email } = req.body;
-  
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: 'http://localhost:3000/reset-password',
   });
-  
+
   if (error) {
     return res.status(400).json({ error: error.message });
   }
-  
+
   return res.json({ message: 'Password reset email sent' });
 });
 
@@ -224,14 +224,14 @@ app.get('/api/profile_data', checkAuth, async (req, res) => {
     `)
     .eq('user_id', req.user.id)
     .single();
-    
+
   if (error) {
     console.error('Error fetching patient:', error);
     return res.status(500).json({ error: 'Failed to fetch patient' });
   }
-  
+
   // Add email from auth user
-  res.json({ 
+  res.json({
     patients: {
       ...data,
       email: req.user.email
@@ -242,7 +242,7 @@ app.get('/api/profile_data', checkAuth, async (req, res) => {
 // Update patient profile
 app.put('/api/update_profile', checkAuth, async (req, res) => {
   const { first_name, last_name, phone_number } = req.body;
-  
+
   const { error } = await supabase
     .from('patients')
     .update({
@@ -251,81 +251,81 @@ app.put('/api/update_profile', checkAuth, async (req, res) => {
       phone_number
     })
     .eq('user_id', req.user.id);
-    
+
   if (error) {
     console.error('Error updating profile:', error);
     return res.status(500).json({ error: 'Failed to update profile' });
   }
-  
+
   res.json({ message: 'Profile updated successfully' });
 });
 
 // Update patient address
 app.put('/api/update_address', checkAuth, async (req, res) => {
   const { street, city, state, zip_code } = req.body;
-  
+
   try {
-    console.log('📍 Updating address:', { street, city, state, zip_code });
-    
+    console.log('Updating address:', { street, city, state, zip_code });
+
     // First get the patient's address_fk
     const { data: patient, error: patientError } = await supabase
       .from('patients')
       .select('address_fk')
       .eq('user_id', req.user.id)
       .single();
-    
+
     if (patientError) {
       console.error('Error fetching patient:', patientError);
       throw patientError;
     }
-    
-    console.log('👤 Patient address_fk:', patient?.address_fk);
-    
+
+    console.log('Patient address_fk:', patient?.address_fk);
+
     if (patient?.address_fk) {
       // Update existing address
-      console.log('✏️ Updating existing address:', patient.address_fk);
+      console.log('Updating existing address:', patient.address_fk);
       const { error } = await supabase
         .from('address')
         .update({ street, city, state, zip_code })
         .eq('address_id', patient.address_fk);
-        
+
       if (error) {
         console.error('Error updating address:', error);
         throw error;
       }
-      console.log('✅ Address updated successfully');
+      console.log('Address updated successfully');
     } else {
       // Create new address
-      console.log('➕ Creating new address');
+      console.log('Creating new address');
       const { data: newAddress, error: insertError } = await supabase
         .from('address')
         .insert({ street, city, state, zip_code })
         .select()
         .single();
-        
+
       if (insertError) {
         console.error('Error inserting address:', insertError);
         throw insertError;
       }
-      
-      console.log('🔗 Linking address to patient:', newAddress.address_id);
-      
+
+      console.log('Linking address to patient:', newAddress.address_id);
+
       // Link address to patient
       const { error: updateError } = await supabase
         .from('patients')
         .update({ address_fk: newAddress.address_id })
         .eq('user_id', req.user.id);
-        
+
       if (updateError) {
         console.error('Error linking address:', updateError);
         throw updateError;
       }
-      console.log('✅ Address created and linked successfully');
+      console.log('Address created and linked successfully');
     }
-    
+
     res.json({ message: 'Address updated successfully' });
   } catch (err) {
-    console.error('❌ Error updating address:', err);
+    console.error('Error updating address:', err);
     res.status(500).json({ error: 'Failed to update address', details: err.message });
   }
 });
