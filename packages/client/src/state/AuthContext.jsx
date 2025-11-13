@@ -64,7 +64,17 @@ export function AuthProvider({ children }) {
         }),
       });
 
-      const data = await res.json();
+      // Check if response has content before parsing
+      const text = await res.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseError) {
+        console.error('❌ Failed to parse response:', text);
+        return { ok: false, error: 'Server returned invalid response. Please ensure the backend server is running.' };
+      }
+
       console.log('📥 Registration response:', data);
 
       if (!res.ok) {
@@ -85,7 +95,7 @@ export function AuthProvider({ children }) {
       return { ok: true, message: 'Registration successful! Please check your email to verify your account.' };
     } catch (err) {
       console.error('❌ Registration error:', err);
-      return { ok: false, error: err.message || 'Registration failed.' };
+      return { ok: false, error: err.message || 'Network error. Please check if the server is running.' };
     }
   };
 
@@ -100,7 +110,17 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      // Check if response has content before parsing
+      const text = await res.text();
+      let data;
+      
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseError) {
+        console.error('❌ Failed to parse response:', text);
+        return { ok: false, error: 'Server returned invalid response. Please ensure the backend server is running.' };
+      }
+
       console.log('📥 Login response:', data);
 
       if (!res.ok) {
@@ -138,7 +158,7 @@ export function AuthProvider({ children }) {
       return { ok: true };
     } catch (err) {
       console.error('❌ Login error:', err);
-      return { ok: false, error: err.message || 'Login failed.' };
+      return { ok: false, error: err.message || 'Network error. Please check if the server is running.' };
     }
   };
 
