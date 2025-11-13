@@ -1,0 +1,179 @@
+.schedule-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  background: #f9fafb;
+  padding: 40px 20px; /* More padding for breathing room */
+}
+
+.wizard-hint {
+  color: var(--slate-600);
+  margin-bottom: 16px;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.required-note {
+  text-align: center;
+  color: var(--slate-600);
+  margin-bottom: 30px; /* Increased spacing */
+}
+
+.appointment-form {
+  background: #fff;
+  padding: 40px; /* More padding inside the form */
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  max-width: 1000px;
+  width: 100%;
+}
+
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.provider-card {
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.provider-card.selected {
+  border-color: var(--primary-500, #2563eb);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);
+}
+
+.provider-meta {
+  color: var(--slate-600);
+  font-size: 0.9rem;
+}
+
+.visit-type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.visit-type-card {
+  border: 1px solid var(--slate-200);
+  border-radius: 999px;
+  padding: 10px 20px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.visit-type-card.selected {
+  background: var(--primary-500, #2563eb);
+  color: #fff;
+  border-color: var(--primary-500, #2563eb);
+}
+
+.slot-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.wizard-error {
+  border: 1px solid var(--rose-200, #fecdd3);
+  background: var(--rose-50, #fff1f2);
+  color: var(--rose-800, #9f1239);
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.slot-card {
+  border: 1px solid var(--slate-200);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slot-card.selected {
+  border-color: var(--emerald-500, #10b981);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.confirmation-state {
+  text-align: center;
+  padding: 32px;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px; /* Increased gap between fields */
+  margin-bottom: 30px; /* Space before submit button */
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+textarea {
+  grid-column: span 3;
+  min-height: 100px;
+}
+
+.submit-container {
+  display: flex;
+  justify-content: center;
+}
+
+.submit-btn {
+  background: gray;
+  color: #fff;
+  border: none;
+  padding: 14px 40px;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.6s ease;
+}
+
+.submit-btn:hover {
+  background: var(--indigo-600);
+}
