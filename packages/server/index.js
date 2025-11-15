@@ -410,6 +410,25 @@ app.get("/api/explore_page", async (req, res) => {
   }
 });
 
+// // provider availability api route
+// app.get("/api/provider_availability/:id/slots", async (req, res) => {
+//   const providerId = req.params.id;
+//   const date = req.query.date;
+//   if (!date) {
+//     return res.status(400).json({ error: "Missing date query parameter" });
+//   }
+//   const { available_times, error } = await supabase
+//     .from("provider_availability")
+//     .select("*")
+//     .eq("provider_id", providerId)
+//     .eq("date", date);
+//   if (error) {
+//     console.error("Error fetching provider availability:", error);
+//     return res.status(500).json({ error: error.message });
+//   }
+//   res.json({ available_times });
+// });
+
 // // insert appointment
 // app.post("/api/appointments", checkAuth, async (req, res) => {
 //   const { reason, visit_type, status, user_id, provider_availability_id } =
