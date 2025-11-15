@@ -503,6 +503,22 @@ app.get("/api/explore_page", async (req, res) => {
 //   res.json({ message: "Appointment rescheduled successfully" });
 // });
 
+// // Update the visit type and reason for an appointment given its ID
+// app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
+//   const appointmentId = req.params.id;
+//   const { visit_type, reason } = req.body;
+
+//   const { error } = await supabase
+//     .from("appointments")
+//     .update({ visit_type, reason })
+//     .eq("id", appointmentId);
+
+//   if (error) {
+//     return res.status(400).json({ error: error.message });
+//   }
+//   res.json({ message: "Appointment updated successfully" });
+// });
+
 // Start the server
 if (isDev) {
   // --- Development: use vite-express to run Vite as middleware ---
