@@ -469,6 +469,41 @@ app.get("/api/explore_page", async (req, res) => {
 //   res.json({ message: "Appointment cancelled successfully" });
 // });
 
+// // reschedule an appointment given its ID
+// app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
+//   const appointmentId = req.params.id;
+//   new_schedule_id = req.body.new_schedule_id;
+//   const { appointment, appointment_error } = await supabase
+//     .from("appointments")
+//     .select("*")
+//     .eq("id", appointmentId);
+//   if (appointment_error) {
+//     res.status(400).json({ error: appointment_error.message });
+//   }
+//   const { update_availability_error } = await supabase
+//     .from("provider_availability")
+//     .update({ status: "available" })
+//     .eq("id", appointment.provider_availability_id);
+//   if (update_availability_error) {
+//     res.status(400).json({ error: update_availability_error.message });
+//   }
+//   const { appointment_update_error } = await supabase
+//     .from("appointments")
+//     .update({ provider_availability_id: new_schedule_id })
+//     .eq("id", appointmentId);
+//   if (appointment_update_error)
+//     res.status(400).json({ error: appointment_update_error.message });
+//   const { new_availability_error } = await supabase
+//     .from("provider_availability")
+//     .update({ status: "booked" })
+//     .eq("id", new_schedule_id);
+//   if (new_availability_error) {
+//     res.status(400).json({ error: new_availability_error.message });
+//   }
+//   res.json({ message: "Appointment rescheduled successfully" });
+// });
+
+// Start the server
 if (isDev) {
   // --- Development: use vite-express to run Vite as middleware ---
   const frontendRoot = path.resolve(__dirname, "../client");
