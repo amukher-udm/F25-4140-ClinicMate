@@ -400,7 +400,7 @@ app.get("/api/provider_availability/:id/slots", async (req, res) => {
   if (!date) {
     return res.status(400).json({ error: "Missing date query parameter" });
   }
-  const { available_times, error } = await supabase
+  const { data: available_times, error } = await supabase
     .from("provider_availability")
     .select("*")
     .eq("provider_id", providerId)
@@ -409,14 +409,14 @@ app.get("/api/provider_availability/:id/slots", async (req, res) => {
     console.error("Error fetching provider availability:", error);
     return res.status(500).json({ error: error.message });
   }
-  res.json({ available_times });
+  res.json(available_times);
 });
 
 // insert appointment
 app.post("/api/appointments", checkAuth, async (req, res) => {
   const { reason, visit_type, status, user_id, provider_availability_id } =
     req.body;
-  const { provider_availability, provider_error } = await supabase
+  const { data: provider_availability, error: provider_error } = await supabase
     .from("provider_availability")
     .select()
     .eq("id", provider_availability_id)
@@ -427,7 +427,6 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
   if (provider_availability.status !== "available") {
     return res.status(400).json({ error: "Selected slot is not available" });
   }
-  provider_availability.status = "booked";
   const { update_error } = await supabase
     .from("provider_availability")
     .update({ status: "booked" })
@@ -450,12 +449,16 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
 });
 
 // Cancel an appointment given its ID
+// temporary implementation
+// *** need modification to use RPC function to avoid reliability issues where one part passes while another fails
 app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
-  const { appointment, appointments_update_error } = await supabase
+  const { data: appointment, error: appointments_update_error } = await supabase
     .from("appointments")
     .update({ status: "cancelled" })
-    .eq("id", appointmentId);
+    .eq("id", appointmentId)
+    .select()
+    .single();
 
   if (appointments_update_error) {
     return res.status(400).json({ error: appointments_update_error.message });
@@ -472,35 +475,39 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
 });
 
 // reschedule an appointment given its ID
+// temporary implementation
+// *** needs modification to check if the new slot is availabile and user RPC function to avoid reliability issues where one part passes while another fails
 app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
-  new_schedule_id = req.body.new_schedule_id;
-  const { appointment, appointment_error } = await supabase
+  const new_schedule_id = req.body.new_schedule_id;
+  const { data: appointment, error: appointment_error } = await supabase
     .from("appointments")
     .select("*")
-    .eq("id", appointmentId);
+    .eq("id", appointmentId)
+    .single();
   if (appointment_error) {
-    res.status(400).json({ error: appointment_error.message });
+    return res.status(400).json({ error: appointment_error.message });
   }
   const { update_availability_error } = await supabase
     .from("provider_availability")
     .update({ status: "available" })
     .eq("id", appointment.provider_availability_id);
   if (update_availability_error) {
-    res.status(400).json({ error: update_availability_error.message });
+    return res.status(400).json({ error: update_availability_error.message });
   }
   const { appointment_update_error } = await supabase
     .from("appointments")
     .update({ provider_availability_id: new_schedule_id })
     .eq("id", appointmentId);
-  if (appointment_update_error)
-    res.status(400).json({ error: appointment_update_error.message });
+  if (appointment_update_error) {
+    return res.status(400).json({ error: appointment_update_error.message });
+  }
   const { new_availability_error } = await supabase
     .from("provider_availability")
     .update({ status: "booked" })
     .eq("id", new_schedule_id);
   if (new_availability_error) {
-    res.status(400).json({ error: new_availability_error.message });
+    return res.status(400).json({ error: new_availability_error.message });
   }
   res.json({ message: "Appointment rescheduled successfully" });
 });
@@ -545,12 +552,17 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   }
   // sorting
   if (sortBy) {
+    // --- USER-PROVIDED SORT ---
+    // e.g., ?sort_by=created_at
+    query = query.order(sortBy, { ascending: order });
+  } else {
+    // if no sorting preference is provided, sort by slot
+    // Sort by date, then by time, from the joined table
     query = query.order("date", {
       foreignTable: "provider_availability",
       ascending: order,
     });
-  } else {
-    query = query.order("date", {
+    query = query.order("start_time", {
       foreignTable: "provider_availability",
       ascending: order,
     });
