@@ -447,6 +447,28 @@ app.get("/api/explore_page", async (req, res) => {
 //   res.json({ message: "Appointment created successfully" });
 // });
 
+// // Cancel an appointment given its ID
+// app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
+//   const appointmentId = req.params.id;
+//   const { appointment, appointments_update_error } = await supabase
+//     .from("appointments")
+//     .update({ status: "cancelled" })
+//     .eq("id", appointmentId);
+
+//   if (appointments_update_error) {
+//     return res.status(400).json({ error: appointments_update_error.message });
+//   }
+//   // update provider_availability status to 'available'
+//   const { availability_update_error } = await supabase
+//     .from("provider_availability")
+//     .update({ status: "available" })
+//     .eq("id", appointment.provider_availability_id);
+//   if (availability_update_error) {
+//     return res.status(400).json({ error: availability_update_error.message });
+//   }
+//   res.json({ message: "Appointment cancelled successfully" });
+// });
+
 if (isDev) {
   // --- Development: use vite-express to run Vite as middleware ---
   const frontendRoot = path.resolve(__dirname, "../client");
