@@ -167,25 +167,6 @@ app.post("/api/sign_up", async (req, res) => {
   }
 });
 
-/*
-app.get('/api/providers/:id/slots', (req, res) => {
-  const date = req.query.date || new Date().toISOString().slice(0, 10);
-  const providerId = req.params.id;
-  const baseDate = new Date(`${date}T09:00:00Z`);
-  const slots = Array.from({ length: 6 }).map((_, i) => {
-    const start = new Date(baseDate);
-    start.setHours(start.getHours() + i);
-    return {
-      slotId: `${providerId}-${start.toISOString()}`,
-      start: start.toISOString(),
-      end: new Date(start.getTime() + 30 * 60 * 1000).toISOString(),
-      status: 'available',
-    };
-  });
-  res.json({ providerId, date, slots, timezone: 'UTC' });
-});
-*/
-
 // Log in - return session token
 app.post("/api/log_in", async (req, res) => {
   const formData = req.body;
