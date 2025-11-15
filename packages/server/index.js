@@ -410,6 +410,8 @@ app.get("/api/explore_page", async (req, res) => {
   }
 });
 
+// Apointment routes (commented out for now till the availability table is made and populated with dummy data)
+
 // // provider availability api route
 // app.get("/api/provider_availability/:id/slots", async (req, res) => {
 //   const providerId = req.params.id;
