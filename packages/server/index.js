@@ -72,6 +72,16 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Hello from Express!' });
 });
 
+// Real Time Availibility APIs
+app.post('/api/make_appointment',(req, res) => {
+  
+
+
+
+});
+
+
+
 // Sign up - create auth user and patient record
 app.post('/api/sign_up', async (req, res) => {
   const formData = req.body;
