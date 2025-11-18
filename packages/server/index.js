@@ -73,10 +73,35 @@ app.get('/api/test', (req, res) => {
 });
 
 // Real Time Availibility APIs
-app.post('/api/make_appointment',(req, res) => {
-  
+app.post('/api/make_appointment',checkAuth, async (req, res) => {
+  //appointments (id , user_id , provider_id , slot_id , status ('scheduled','completed','canceled'), visit_type, notes, created_at)
+  const {provider_id , slot_id , status, visit_type, notes}=req.body
 
+  const { data: newAppointment, error:appointmentError  } = await supabase
+    .from('appointments')
+    .insert({
+      user_id : req.user.user_id, 
+      provider_id: provider_id, 
+      slot_id: slot_id, 
+      status:status, 
+      visit_type:visit_type, 
+      notes:notes 
+    })
+    .select();
 
+  if (appointmentError) {
+    console.error('Appointment creation failed:', appointmentError);
+    return res.status(400).json({
+      error: appointmentError
+    });
+  }
+
+  console.log(' Appointment Created:', newAppointment);
+
+  return res.json({
+    message: 'Appointment Created!',
+    session: data.session
+  });
 
 });
 
