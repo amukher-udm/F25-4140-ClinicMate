@@ -75,7 +75,7 @@ app.get('/api/test', (req, res) => {
 // Real Time Availibility APIs
 app.post('/api/make_appointment',checkAuth, async (req, res) => {
   //appointments (id , user_id , provider_id , slot_id , status ('scheduled','completed','canceled'), visit_type, notes, created_at)
-  const {provider_id , slot_id , status, visit_type, notes}=req.body
+  const {provider_id , slot_id , visit_type, notes}=req.body
 
   const { data: newAppointment, error:appointmentError  } = await supabase
     .from('appointments')
@@ -83,7 +83,7 @@ app.post('/api/make_appointment',checkAuth, async (req, res) => {
       user_id : req.user.user_id, 
       provider_id: provider_id, 
       slot_id: slot_id, 
-      status:status, 
+      status:'scheduled', 
       visit_type:visit_type, 
       notes:notes 
     })
