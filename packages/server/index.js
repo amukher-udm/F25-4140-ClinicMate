@@ -476,7 +476,7 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
 
 // reschedule an appointment given its ID
 // temporary implementation
-// *** needs modification to check if the new slot is availabile and user RPC function to avoid reliability issues where one part passes while another fails
+// *** needs modification to check if the new slot is availabile and use RPC function to avoid reliability issues where one part passes while another fails
 app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
   const new_schedule_id = req.body.new_schedule_id;
