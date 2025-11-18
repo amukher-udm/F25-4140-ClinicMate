@@ -1,0 +1,303 @@
+/* Make the page able to center its content */
+html, body, #root { height: 100%; }
+* { box-sizing: border-box; }
+
+/* Prevent horizontal scroll caused by wide children */
+body { overflow-x: hidden; }
+
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-x: hidden;
+}
+
+.auth-container {
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  width: 400px;
+  max-width: 92vw;
+}
+
+.auth-container h1 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.form-group input {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  flex: 1;
+}
+
+/* Toggle visibility button inside password field */
+.show-btn {
+  position: absolute;
+  right: 0px;
+  top: 10px;
+  transform: translateY(-50%);
+  background: none;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.show-btn:hover {
+  background: #f9fafb;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.login-btn {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 5px;
+  background: #007bff;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 108px;
+  display: block;
+  margin: 0 auto;
+}
+
+.login-btn:hover {
+  background: #0056b3;
+}
+
+.signup-btn {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 5px;
+  background: #007bff;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 150px;
+  display: block;
+  margin: 0 auto;
+}
+
+.signup-btn:hover {
+  background: #0056b3;
+}
+
+.reset-btn {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 5px;
+  background: #007bff;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 145px;
+  display: block;
+  margin: 0 auto;
+}
+
+.reset-btn:hover {
+  background: #0056b3;
+}
+
+.switch-text {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.link {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.forgot-password {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.signup-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.signup-button {
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.signup-button:hover {
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* demo note */
+.demo-note {
+  margin-top: 16px;
+  font-size: .9rem;
+  color: #475569;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.demo-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---------- ClinicMate Auth micro-animations ---------- */
+
+/* page mount */
+.cm-auth-enter {
+  animation: cmAuthEnter .48s ease-out both;
+}
+
+@keyframes cmAuthEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* stagger helpers */
+.cm-fade-in {
+  opacity: 0;
+  animation: cmFadeIn .5s ease-out both;
+}
+
+@keyframes cmFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cm-field-in {
+  opacity: 0;
+  animation: cmFieldIn .55s cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes cmFieldIn {
+  0% { opacity: 0; transform: translateY(10px) scale(.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* button micro-interaction */
+.cm-press {
+  transition: transform .06s ease;
+}
+
+.cm-press:active {
+  transform: translateY(1px) scale(.995);
+}
+
+/* modal */
+.cm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  padding-top: 8vh;
+  background: rgba(2,6,23,.55);
+  display: grid;
+  place-items: start center;
+  z-index: 9999;
+}
+
+.cm-modal-panel {
+  width: min(92vw, 420px);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(2,6,23,.25);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+}
+
+.cm-slide-down {
+  animation: cmSlideDown .38s cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes cmSlideDown {
+  0% { opacity: 0; transform: translateY(-28px); }
+  60% { opacity: 1; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.cm-modal-title {
+  margin: 18px 20px 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cm-modal-text {
+  margin: 0 20px 18px;
+  color: #334155;
+}
+
+.cm-modal-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+/* center the OK button at the bottom */
+.cm-actions-center {
+  justify-content: center;
+}
+
+/* reduce-motion friendly */
+@media (prefers-reduced-motion: reduce) {
+  .cm-auth-enter, .cm-fade-in, .cm-field-in, .cm-slide-down {
+    animation: none !important;
+  }
+}
