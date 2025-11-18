@@ -95,7 +95,6 @@ app.post('/api/make_appointment',checkAuth, async (req, res) => {
       error: appointmentError
     });
   }
-
   console.log(' Appointment Created:', newAppointment);
 
   return res.json({
