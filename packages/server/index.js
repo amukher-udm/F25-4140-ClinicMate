@@ -439,7 +439,7 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
     visit_type,
     status,
     user_id,
-    provider_availability_id,
+    slot_id,
   });
 
   if (insert_error) {
