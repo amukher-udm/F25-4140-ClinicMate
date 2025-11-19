@@ -11,6 +11,11 @@ export default function AppointmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState('All');
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,6 +88,12 @@ export default function AppointmentPage() {
     filter === 'All' ? true : a.status === filter
   );
 
+  const handleCancelAppointment = () => {
+
+    setShowCancelConfirmation(false);
+    setSelectedAppointment(null);
+  };
+
   if (authLoading || loading) {
     return (
       <>
@@ -151,7 +162,23 @@ export default function AppointmentPage() {
           ) : (
             <div className="appointments-list">
               {filteredAppointments.map(a => (
-                <div key={a.id} className="appointment-card">
+                <div 
+                  key={a.id} 
+                  className="appointment-card"
+                  onClick={() => {
+                    if(a.status === 'Pending' || a.status === 'Confirmed') {
+                      setSelectedAppointment({
+                        doctorName: a.doctor,
+                        doctorSpecialty: a.doctor.split(' - ')[1],
+                        hospital: a.hospital,
+                        hospitalAddress: a.hospitalAddress,
+                        time: a.time
+                      });
+                    }
+                  }}
+                  style={{ cursor: (a.status === 'Pending' || a.status === 'Confirmed') ? 'pointer' : 'default' }}
+                >
+
                   <div className="appointment-info">
                     <div>
                       <h3 className="appointment-name">{a.patientName}</h3>
@@ -184,6 +211,137 @@ export default function AppointmentPage() {
           </button>
         </div>
       </main>
+
+      {selectedAppointment && (
+        <div className="appointment-modal-overlay" onClick={() => setSelectedAppointment(null)}>
+          <div className="appointment-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setSelectedAppointment(null)}>✕</button>
+            <h2>Appointment Details</h2>
+            <p><strong>Doctor:</strong> {selectedAppointment.doctorName}</p>
+            {/* <p><strong>Specialty:</strong> {selectedAppointment.doctorSpecialty}</p> */}
+            <p><strong>Hospital:</strong> {selectedAppointment.hospital} {selectedAppointment.hospitalAddress && `- ${selectedAppointment.hospitalAddress}`}</p>
+            <p><strong>Date & Time:</strong> {selectedAppointment.time}</p>
+            <div className="modal-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowRescheduleModal(true)}
+              >
+                Reschedule
+              </button>
+              <button 
+                className="btn btn-cancel" 
+                onClick={() => setShowCancelConfirmation(true)}
+              >
+                Cancel
+            </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelConfirmation && selectedAppointment && (
+        <div
+          className="cancel-modal-overlay"
+          onClick={() => setShowCancelConfirmation(false)}
+        >
+          <div className="cancel-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="cancel-modal-close-btn"
+              onClick={() => setShowCancelConfirmation(false)}
+            >
+              ✕
+            </button>
+            <h2>Cancel Appointment</h2>
+            <p>
+              <strong>Doctor:</strong> {selectedAppointment.doctorName}
+            </p>
+            <p>
+              <strong>Specialty:</strong> {selectedAppointment.doctorSpecialty}
+            </p>
+            <p>
+              <strong>Hospital:</strong> {selectedAppointment.hospital}{' '}
+              {selectedAppointment.hospitalAddress &&
+                `- ${selectedAppointment.hospitalAddress}`}
+            </p>
+            <p>
+              <strong>Date & Time:</strong> {selectedAppointment.time}
+            </p>
+            <p className="cancel-confirmation-text">
+              Are you sure that you would like to cancel this appointment?
+            </p>
+            <div className="cancel-modal-actions">
+              <button
+                className="btn-cancel-appointment"
+                onClick={handleCancelAppointment}
+              >
+                Cancel Appointment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRescheduleModal && selectedAppointment && (
+        <div
+          className="cancel-modal-overlay"
+          onClick={() => setShowRescheduleModal(false)}
+        >
+          <div className="cancel-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="cancel-modal-close-btn"
+              onClick={() => setShowRescheduleModal(false)}
+            >
+              ✕
+            </button>
+
+            <h2>Reschedule Appointment</h2>
+
+            <p><strong>Doctor:</strong> {selectedAppointment.doctorName}</p>
+            {/* <p><strong>Specialty:</strong> {selectedAppointment.doctorSpecialty}</p> */}
+            <p><strong>Hospital:</strong> {selectedAppointment.hospital} {selectedAppointment.hospitalAddress && `- ${selectedAppointment.hospitalAddress}`}</p>
+            <p><strong>Current Time:</strong> {selectedAppointment.time}</p>
+
+            <div className="reschedule-inputs">
+              <label>
+                New Date:
+                <input 
+                  type="date" 
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                />
+              </label>
+
+              <label>
+                New Time:
+                <select
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                >
+                  <option value="">Select a time...</option>
+                  <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
+                  <option value="afternoon">Afternoon (12:00 PM - 5:00 PM)</option>
+                  <option value="evening">Evening (5:00 PM - 8:00 PM)</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="cancel-modal-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  // For now, just close modal. Later: Update backend.
+                  setShowRescheduleModal(false);
+                  setSelectedAppointment(null);
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       <Footer />
     </>
   );

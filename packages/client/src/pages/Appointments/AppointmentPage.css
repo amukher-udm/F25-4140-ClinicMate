@@ -133,3 +133,149 @@
   background: #dc2626;
   color: #fff;
 }
+
+/* Modal overlay */
+.appointment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal box */
+.appointment-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+/* Close button */
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Modal action buttons */
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.modal-actions .btn-primary {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.modal-actions .btn-cancel {
+  background-color: #dc2626;
+  color: white;
+}
+
+.modal-actions .btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.modal-actions .btn-cancel:hover {
+  background-color: #b91c1c;
+}
+
+.cancel-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.cancel-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  position: relative;
+  text-align: center;
+}
+
+.cancel-modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.cancel-confirmation-text {
+  margin: 20px 0;
+  color: var(--slate-700);
+}
+
+.cancel-modal-actions .btn-cancel-appointment {
+  background-color: #dc2626;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.cancel-modal-actions .btn-cancel-appointment:hover {
+  background-color: #b91c1c;
+}
+
+.reschedule-inputs {
+  display: flex;
+  flex-direction: column; /* stack vertically */
+  align-items: center;
+  gap: 1rem; /* space between inputs */
+  margin: 1.2rem 0;
+}
+
+/* Each label wraps one input */
+.reschedule-inputs label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--slate-700);
+  width: 100%; /* full width now */
+}
+
+/* Input styling */
+.reschedule-inputs input,
+.reschedule-inputs select {
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  background: white;
+  height: 40px;
+  box-sizing: border-box;
+  width: 65%;
+}
