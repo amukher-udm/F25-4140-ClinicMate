@@ -225,7 +225,7 @@ app.get("/api/profile_data", checkAuth, async (req, res) => {
     `
     )
     .eq("user_id", req.user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Error fetching patient:", error);
@@ -396,7 +396,7 @@ app.get("/api/explore_page", async (req, res) => {
 // provider availability api route
 app.get("/api/provider_availability/:id/slots", async (req, res) => {
   const providerId = req.params.id;
-  const date = req.query.date;
+  const date = req.body.date;
   if (!date) {
     return res.status(400).json({ error: "Missing date query parameter" });
   }
