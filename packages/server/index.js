@@ -643,6 +643,22 @@ app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
       .status(400)
       .json({ error: "Cannot reschedule a cancelled appointment" });
   }
+  if (appointment.slot_id === new_slot_id) {
+    return res
+      .status(400)
+      .json({ error: "New slot must be different from current slot" });
+  }
+  const { data: new_slot_data, error: new_slot_error } = await req.supabase
+    .from("provider_availability")
+    .select("*")
+    .eq("id", new_slot_id)
+    .maybeSingle();
+  if (new_slot_error) {
+    return res.status(400).json({ error: new_slot_error.message });
+  }
+  if (new_slot_data.is_booked) {
+    return res.status(400).json({ error: "New slot is not available" });
+  }
   const { error: update_availability_error } = await req.supabase
     .from("provider_availability")
     .update({ is_booked: false })
