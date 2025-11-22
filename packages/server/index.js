@@ -29,27 +29,33 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 //Check Auth
 const checkAuth = async (req, res, next) => {
-  // 1. Check for an 'Authorization' header
+  // Check for an 'Authorization' header
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer "))
     return res.status(401).json({ error: "Unauthorized: No token provided" });
 
-  // 2. Extract the token
+  // Extract the token
   const token = authHeader.split(" ")[1];
 
-  // 3. Verify the token with Supabase
+  req.supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: { Authorization: authHeader },
+    },
+  });
+
+  // Verify the token with Supabase
   try {
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser(token);
+    } = await req.supabase.auth.getUser(token);
 
     if (error)
       return res.status(401).json({ error: "Unauthorized: " + error.message });
     if (!user)
       return res.status(401).json({ error: "Unauthorized: Invalid token" });
 
-    // 4. Attach user info to the request and proceed
+    // Attach user info to the request and proceed
     req.user = user;
     next();
   } catch (error) {
@@ -225,7 +231,7 @@ app.get("/api/profile_data", checkAuth, async (req, res) => {
     `
     )
     .eq("user_id", req.user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Error fetching patient:", error);
@@ -412,137 +418,38 @@ app.get("/api/provider_availability/:id/slots", async (req, res) => {
   res.json(available_times);
 });
 
-// insert appointment
-app.post("/api/appointments", checkAuth, async (req, res) => {
-  const { reason, visit_type, status, user_id, provider_availability_id } =
-    req.body;
-  const { data: provider_availability, error: provider_error } = await supabase
-    .from("provider_availability")
-    .select()
-    .eq("id", provider_availability_id)
-    .single();
-  if (provider_error) {
-    return res.status(400).json({ error: provider_error.message });
-  }
-  if (provider_availability.status !== "available") {
-    return res.status(400).json({ error: "Selected slot is not available" });
-  }
-  const { update_error } = await supabase
-    .from("provider_availability")
-    .update({ status: "booked" })
-    .eq("id", provider_availability_id);
-  if (update_error) {
-    return res.status(400).json({ error: update_error.message });
-  }
-  const { insert_error } = await supabase.from("appointments").insert({
-    reason,
-    visit_type,
-    status,
-    user_id,
-    slot_id,
-  });
-
-  if (insert_error) {
-    return res.status(400).json({ error: insert_error.message });
-  }
-  res.json({ message: "Appointment created successfully" });
-});
-
-// Cancel an appointment given its ID
-// temporary implementation
-// *** need modification to use RPC function to avoid reliability issues where one part passes while another fails
-app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
-  const appointmentId = req.params.id;
-  const { data: appointment, error: appointments_update_error } = await supabase
-    .from("appointments")
-    .update({ status: "cancelled" })
-    .eq("id", appointmentId)
-    .select()
-    .single();
-
-  if (appointments_update_error) {
-    return res.status(400).json({ error: appointments_update_error.message });
-  }
-  // update provider_availability status to 'available'
-  const { availability_update_error } = await supabase
-    .from("provider_availability")
-    .update({ status: "available" })
-    .eq("id", appointment.provider_availability_id);
-  if (availability_update_error) {
-    return res.status(400).json({ error: availability_update_error.message });
-  }
-  res.json({ message: "Appointment cancelled successfully" });
-});
-
-// reschedule an appointment given its ID
-// temporary implementation
-// *** needs modification to check if the new slot is availabile and use RPC function to avoid reliability issues where one part passes while another fails
-app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
-  const appointmentId = req.params.id;
-  const new_schedule_id = req.body.new_schedule_id;
-  const { data: appointment, error: appointment_error } = await supabase
-    .from("appointments")
-    .select("*")
-    .eq("id", appointmentId)
-    .single();
-  if (appointment_error) {
-    return res.status(400).json({ error: appointment_error.message });
-  }
-  const { update_availability_error } = await supabase
-    .from("provider_availability")
-    .update({ status: "available" })
-    .eq("id", appointment.provider_availability_id);
-  if (update_availability_error) {
-    return res.status(400).json({ error: update_availability_error.message });
-  }
-  const { appointment_update_error } = await supabase
-    .from("appointments")
-    .update({ provider_availability_id: new_schedule_id })
-    .eq("id", appointmentId);
-  if (appointment_update_error) {
-    return res.status(400).json({ error: appointment_update_error.message });
-  }
-  const { new_availability_error } = await supabase
-    .from("provider_availability")
-    .update({ status: "booked" })
-    .eq("id", new_schedule_id);
-  if (new_availability_error) {
-    return res.status(400).json({ error: new_availability_error.message });
-  }
-  res.json({ message: "Appointment rescheduled successfully" });
-});
-
-// Update the visit type and reason for an appointment given its ID
-app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
-  const appointmentId = req.params.id;
-  const { visit_type, reason } = req.body;
-
-  const { error } = await supabase
-    .from("appointments")
-    .update({ visit_type, reason })
-    .eq("id", appointmentId);
-
-  if (error) {
-    return res.status(400).json({ error: error.message });
-  }
-  res.json({ message: "Appointment updated successfully" });
-});
-
-// filtered and sorted appointments for an authenticated user
+/**
+ * GET /api/appointments
+ * Description:
+ * fetches a list of appointments for the authenticated user,
+ *
+ * Query Parameters:
+ * - status: Optional. Filter appointments by status (all, scheduled, completed, cancelled). Default is all
+ * - sort_by: Optional. Field to sort by (e.g., date, created_at). Default is date
+ * - order: Optional. asc or desc for sorting order. Default is desc
+ *
+ * Returns:
+ * - JSON: { data: [ ...appointments ] }
+ */
 app.get("/api/appointments", checkAuth, async (req, res) => {
   const statusFilter = req.query.status; // all, scheduled, completed, cancelled
   const sortBy = req.query.sort_by;
   const order = req.query.order === "asc";
   // Build the query
-  let query = supabase
+  let query = req.supabase
     .from("appointments")
     .select(
       `
         *,
-        provider_availability (
+        reason: notes,
+        slot: provider_availability!slot_id (
           date,
-          start_time,
-          end_time
+          slot_start,
+          slot_end
+        ),
+        hospital: hospitals!provider_id (
+        name,
+        address: address_id(*)
         )
       `
     )
@@ -551,19 +458,18 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
     query = query.eq("status", statusFilter);
   }
   // sorting
-  if (sortBy) {
-    // --- USER-PROVIDED SORT ---
+  if (sortBy && sortBy !== "date") {
     // e.g., ?sort_by=created_at
     query = query.order(sortBy, { ascending: order });
   } else {
     // if no sorting preference is provided, sort by slot
     // Sort by date, then by time, from the joined table
     query = query.order("date", {
-      foreignTable: "provider_availability",
+      foreignTable: "slot",
       ascending: order,
     });
-    query = query.order("start_time", {
-      foreignTable: "provider_availability",
+    query = query.order("slot_start", {
+      foreignTable: "slot",
       ascending: order,
     });
   }
@@ -571,9 +477,234 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   // executing the query
   const { data, error } = await query;
   if (error) {
-    return res.status(400).json({ error: error.message });
+    return res
+      .status(400)
+      .json({ "Error fetching appointments:": error.message });
   }
   res.json({ data });
+});
+
+/**
+ * POST /api/appointments
+ * Description:
+ * Books a new appointment for the authenticated user. Checks slot availability first,
+ * then marks the slot as booked and creates the appointment record.
+ *
+ * Request Body:
+ * - slot_id (uuid): ID of the provider availability slot to book
+ * - visit_type (string): Type of visit (e.g., "new_patient", "follow_up", "sick_visit")
+ * - reason (string): Detailed reason for the visit (maps to DB column 'notes')
+ *
+ * Returns:
+ * -- Success: { message: "Appointment created successfully" }
+ * -- Failure: { error: "Error message describing the issue" }
+ */
+app.post("/api/appointments", checkAuth, async (req, res) => {
+  const { reason, visit_type, slot_id } = req.body;
+  const user_id = req.user.id;
+  const { data: slot, error: slotError } = await req.supabase
+    .from("provider_availability")
+    .select()
+    .eq("id", slot_id)
+    .single();
+  if (slotError) {
+    return res.status(400).json({ error: slotError.message });
+  }
+  if (slot.is_booked) {
+    return res.status(400).json({ error: "Selected slot is not available" });
+  }
+  const { error: update_error } = await req.supabase
+    .from("provider_availability")
+    .update({ is_booked: true })
+    .eq("id", slot_id);
+  if (update_error) {
+    return res.status(400).json({ error: update_error.message });
+  }
+  const { error: insert_error } = await req.supabase
+    .from("appointments")
+    .insert({
+      notes: reason,
+      visit_type,
+      status: "scheduled",
+      user_id,
+      slot_id,
+      provider_id: slot.provider_id,
+    });
+
+  if (insert_error) {
+    console.error("Appointment insert failed, rolling back slot...");
+    await supabase
+      .from("provider_availability")
+      .update({ is_booked: false })
+      .eq("id", slot_id);
+    return res.status(400).json({ error: insert_error.message });
+  }
+  res.json({ message: "Appointment created successfully" });
+});
+
+/**
+ * PATCH /api/appointments/:id/cancel
+ * Description:
+ * Cancels an existing appointment by its ID and frees up the associated provider availability slot.
+ *
+ * URL Parameters:
+ * - id (int): ID of the appointment to cancel
+ *
+ * Returns:
+ * - Success: { message: "Appointment cancelled successfully" }
+ * - Failure: { error: "Error message describing the issue" }
+ */
+app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
+  const appointmentId = req.params.id;
+  const { data: appointment, error: fetch_error } = await req.supabase
+    .from("appointments")
+    .select("slot_id, status")
+    .eq("id", appointmentId)
+    .maybeSingle();
+  if (fetch_error) {
+    return res.status(400).json({ error: fetch_error.message });
+  }
+  if (!appointment) {
+    return res.status(404).json({ error: "Appointment not found" });
+  }
+  console.log(appointment);
+  if (appointment.status === "cancelled") {
+    return res.status(400).json({ error: "Appointment is already cancelled" });
+  }
+  // mark appointment as cancelled
+  const { error: aptError } = await req.supabase
+    .from("appointments")
+    .update({ status: "cancelled" })
+    .eq("id", appointmentId);
+
+  if (aptError) {
+    return res.status(400).json({ error: aptError.message });
+  }
+
+  // update provider_availability is_booked to false
+  const { data: slotData, error: slotError } = await req.supabase
+    .from("provider_availability")
+    .update({ is_booked: false })
+    .eq("id", appointment.slot_id)
+    .select();
+  if (slotError) {
+    return res.status(400).json({ "Error freeing slot:": slotError.message });
+  }
+  if (!slotData || slotData.length === 0) {
+    return res
+      .status(404)
+      .json({ error: "Associated slot not found to free up" });
+  }
+  res.json({ message: "Appointment cancelled successfully" });
+});
+
+/**
+ * PATCH /api/appointments/:id/reschedule
+ * Description:
+ * Reschedules an existing appointment to a new provider availability slot.
+ * Frees up the old slot and marks the new slot as booked.
+ *
+ * URL Parameters:
+ * - id (int): ID of the appointment to reschedule
+ *
+ * Request Body:
+ * - new_slot_id (uuid): ID of the new provider availability slot to book
+ *
+ * Returns:
+ * - Success: { message: "Appointment rescheduled successfully" }
+ * - Failure: { error: "Error message describing the issue" }
+ */
+app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
+  const appointmentId = req.params.id;
+  const { new_slot_id } = req.body;
+  if (!new_slot_id) {
+    return res.status(400).json({ error: "Missing new_slot_id in body" });
+  }
+  const { data: appointment, error: appointment_error } = await req.supabase
+    .from("appointments")
+    .select("*")
+    .eq("id", appointmentId)
+    .maybeSingle();
+  if (appointment_error) {
+    return res.status(400).json({ error: appointment_error.message });
+  }
+  if (appointment.status === "cancelled") {
+    return res
+      .status(400)
+      .json({ error: "Cannot reschedule a cancelled appointment" });
+  }
+  const { error: update_availability_error } = await req.supabase
+    .from("provider_availability")
+    .update({ is_booked: false })
+    .eq("id", appointment.slot_id);
+  if (update_availability_error) {
+    return res.status(400).json({ error: update_availability_error.message });
+  }
+  const { error: appointment_update_error } = await req.supabase
+    .from("appointments")
+    .update({ slot_id: new_slot_id })
+    .eq("id", appointmentId);
+  if (appointment_update_error) {
+    return res.status(400).json({ error: appointment_update_error.message });
+  }
+  const { data: new_slot, error: new_availability_error } = await req.supabase
+    .from("provider_availability")
+    .update({ is_booked: true })
+    .eq("id", new_slot_id)
+    .select();
+  if (new_availability_error) {
+    return res.status(400).json({ error: new_availability_error.message });
+  }
+  if (!new_slot || new_slot.length === 0) {
+    return res.status(404).json({ error: "New slot not found to book" });
+  }
+  res.json({ message: "Appointment rescheduled successfully" });
+});
+
+/**
+ * PATCH /api/appointments/:id/update
+ * Description:
+ * Updates details of an existing appointment such as visit type or reason.
+ *
+ * URL Parameters:
+ * - id (int): ID of the appointment to update
+ *
+ * Request Body:
+ * - visit_type (string, optional): New visit type
+ * - reason (string, optional): New reason for the visit
+ * Must provide at least one of the fields to update.
+ *
+ * Returns:
+ * - Success: { message: "Appointment updated successfully" }
+ * - Failure: { error: "Error message describing the issue" }
+ */
+app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
+  const appointmentId = req.params.id;
+  const { visit_type, reason } = req.body;
+  if (!visit_type && !reason) {
+    return res
+      .status(400)
+      .json({ error: "Please provide the new visit_type or reason" });
+  }
+  const updates = {};
+  if (visit_type) updates.visit_type = visit_type;
+  if (reason) updates.notes = reason;
+  const { data: appointment, error: appointment_update_error } =
+    await req.supabase
+      .from("appointments")
+      .update(updates)
+      .eq("id", appointmentId)
+      .select();
+
+  if (appointment_update_error) {
+    return res.status(400).json({ error: appointment_update_error.message });
+  }
+  if (!appointment || appointment.length === 0) {
+    return res
+      .status(404)
+      .json({ error: "Appointment not found or permission denied" });
+  }
+  res.json({ message: "Appointment updated successfully" });
 });
 
 // Start the server
