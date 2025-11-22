@@ -399,14 +399,24 @@ app.get("/api/explore_page", async (req, res) => {
 
 // Appointment routes
 
-// provider availability api route
+/**
+ * GET /api/provider_availability/:id/slots
+ * Description:
+ * fetches available time slots for a specific provider on a given date.
+ *
+ * URL Parameters:
+ * - id (uuid): ID of the provider
+ *
+ * Query Parameters:
+ * - date (string): Date to check availability for (format: YYYY-MM-DD)
+ */
 app.get("/api/provider_availability/:id/slots", async (req, res) => {
   const providerId = req.params.id;
-  const date = req.body.date;
+  const date = req.query.date;
   if (!date) {
     return res.status(400).json({ error: "Missing date query parameter" });
   }
-  const { data: available_times, error } = await supabase
+  const { data: available_times, error } = await req.supabase
     .from("provider_availability")
     .select("*")
     .eq("provider_id", providerId)
@@ -533,7 +543,7 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
 
   if (insert_error) {
     console.error("Appointment insert failed, rolling back slot...");
-    await supabase
+    await req.supabase
       .from("provider_availability")
       .update({ is_booked: false })
       .eq("id", slot_id);
