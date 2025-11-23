@@ -66,6 +66,7 @@ const checkAuth = async (req, res, next) => {
 
     // Attach user info to the request and proceed
     req.user = user;
+    
     next();
   } catch (error) {
     console.error("Unexpected error in auth middleware:", error);
@@ -313,11 +314,14 @@ app.get("/api/profile_data", checkAuth, async (req, res) => {
  * - phone_number (string): Patient's phone number
  * - gender (string): Patient's gender
  * - middle_initial (string): Patient's middle initial
+ * - OPTIONAL FOR ADMIN: user_id(string): List user being manipulated
  */
 app.put("/api/update_profile", checkAuth, async (req, res) => {
   const { first_name, last_name, phone_number, gender, middle_initial } =
     req.body;
-
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   const { error: updateError } = await req.supabase
     .from("patients")
     .update({
@@ -350,7 +354,9 @@ app.put("/api/update_profile", checkAuth, async (req, res) => {
  */
 app.put("/api/update_address", checkAuth, async (req, res) => {
   const { street, city, state, zip_code } = req.body;
-
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   try {
     console.log("Updating address:", { street, city, state, zip_code });
 
@@ -511,6 +517,36 @@ app.get("/api/provider_availability/:id/slots", async (req, res) => {
   }
   res.json(available_times);
 });
+/**
+ * GET /api/provider_availability
+ * Description:
+ * gets all slots.
+ *
+ * URL Parameters:
+ * -none
+ *
+ * Query Parameters:
+ * - none
+ */
+app.get("/api/provider_availability", async (req, res) => {
+
+  const { data: available_times, error } = await supabase
+    .from("provider_availability")
+    .select(
+      `*,
+         hospital: hospitals!provider_id (
+        name,
+        address: address_id(*)
+        )`
+      )
+  if (error) {
+    console.error("Error fetching provider availability:", error);
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(available_times);
+});
+
+
 
 /**
  * GET /api/appointments
@@ -529,6 +565,9 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   const statusFilter = req.query.status; // all, scheduled, completed, cancelled
   const sortBy = req.query.sort_by;
   const order = req.query.order === "asc";
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   // Build the query
   let query = req.supabase
     .from("appointments")
@@ -596,6 +635,9 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
 app.post("/api/appointments", checkAuth, async (req, res) => {
   const { reason, visit_type, slot_id } = req.body;
   const user_id = req.user.id;
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   const { data: slot, error: slotError } = await req.supabase
     .from("provider_availability")
     .select()
@@ -650,6 +692,9 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
  */
 app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   const { data: appointment, error: fetch_error } = await req.supabase
     .from("appointments")
     .select("slot_id, status")
@@ -711,6 +756,9 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
 app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
   const { new_slot_id } = req.body;
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   if (!new_slot_id) {
     return res.status(400).json({ error: "Missing new_slot_id in body" });
   }
@@ -791,6 +839,9 @@ app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
 app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
   const { visit_type, reason } = req.body;
+  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
+      req.user.id=req.body.user_id
+  }
   if (!visit_type && !reason) {
     return res
       .status(400)
@@ -815,6 +866,73 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
       .json({ error: "Appointment not found or permission denied" });
   }
   res.json({ message: "Appointment updated successfully" });
+});
+
+
+/**
+ * GET /api/admin/appointments
+ * Description:
+ * fetches a list of all appointments for users
+ *
+ * Query Parameters:
+ * - status: Optional. Filter appointments by status (all, scheduled, completed, cancelled). Default is all
+ * - sort_by: Optional. Field to sort by (e.g., date, created_at). Default is date
+ * - order: Optional. asc or desc for sorting order. Default is desc
+ *
+ * Returns:
+ * - JSON: { data: [ ...appointments ] }
+ */
+app.get("/api/admin/appointments", checkAuth, async (req, res) => {
+  const statusFilter = req.query.status; // all, scheduled, completed, cancelled
+  const sortBy = req.query.sort_by;
+  const order = req.query.order === "asc";
+  // Build the query
+  let query = req.supabase
+    .from("appointments")
+    .select(
+      `
+        *,
+        reason: notes,
+        slot: provider_availability!slot_id (
+          date,
+          slot_start,
+          slot_end
+        ),
+        hospital: hospitals!provider_id (
+        name,
+        address: address_id(*)
+        )
+      `
+    )
+    
+  if (statusFilter && statusFilter !== "all") {
+    query = query.eq("status", statusFilter);
+  }
+  // sorting
+  if (sortBy && sortBy !== "date") {
+    // e.g., ?sort_by=created_at
+    query = query.order(sortBy, { ascending: order });
+  } else {
+    // if no sorting preference is provided, sort by slot
+    // Sort by date, then by time, from the joined table
+    query = query.order("date", {
+      foreignTable: "slot",
+      ascending: order,
+    });
+    query = query.order("slot_start", {
+      foreignTable: "slot",
+      ascending: order,
+    });
+  }
+
+  // executing the query
+  const { data, error } = await query;
+  if (error) {
+    return res
+      .status(400)
+      .json({ "Error fetching appointments:": error.message });
+  }
+  res.json({ data });
 });
 
 // Start the server
