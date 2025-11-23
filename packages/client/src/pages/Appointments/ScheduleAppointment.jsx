@@ -4,6 +4,8 @@ import Navbar from '../../components/Navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import './ScheduleAppointment.css';
 import { useAuth } from '../../state/AuthContext.jsx';
+import { getSlots, createAppointment } from '../../api/appointments.js';
+import AvailabilityCalendar from '../../components/AppointmentCalendar/AvailabilityCalendar.jsx';
 
 export default function ScheduleAppointmentPage() {
   const { user, loading: authLoading, getToken } = useAuth();
@@ -15,6 +17,11 @@ export default function ScheduleAppointmentPage() {
   const [doctors, setDoctors] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const [specialties, setSpecialties] = useState([]);
+  
+  // Slot selection state
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlotId, setSelectedSlotId] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -88,6 +95,37 @@ export default function ScheduleAppointmentPage() {
     loadData();
   }, [authLoading, user, navigate, getToken]);
 
+  // Fetch available slots when provider and date are selected
+  useEffect(() => {
+    if (formData.provider && formData.preferredDate) {
+      const fetchSlots = async () => {
+        try {
+          setLoadingSlots(true);
+          setSelectedSlotId('');
+          const token = getToken();
+          
+          // Use the provider as the provider_id for fetching slots
+          const slots = await getSlots({
+            providerId: formData.provider,
+            date: formData.preferredDate
+          }, token);
+          
+          console.log('🕐 Available slots:', slots);
+          setAvailableSlots(slots || []);
+        } catch (err) {
+          console.error('❌ Error fetching slots:', err);
+          setAvailableSlots([]);
+        } finally {
+          setLoadingSlots(false);
+        }
+      };
+      fetchSlots();
+    } else {
+      setAvailableSlots([]);
+      setSelectedSlotId('');
+    }
+  }, [formData.provider, formData.preferredDate, getToken]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -98,44 +136,56 @@ export default function ScheduleAppointmentPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!selectedSlotId) {
+      alert('Please select a specific time slot for your appointment.');
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
       const token = getToken();
       
-      // In development, just show success message
-      if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-        setTimeout(() => {
-          setSuccess(true);
-          setSubmitting(false);
-        }, 1000);
-        return;
+      // Map the form's appointmentType to backend's visit_type format
+      let visit_type = formData.appointmentType;
+      if (visit_type === 'General Checkup') visit_type = 'annual_physical';
+      if (visit_type === 'Follow-up') visit_type = 'follow_up';
+      if (visit_type === 'New Patient') visit_type = 'new_patient';
+      // For specialties, use as sick_visit or keep as is
+      if (!['new_patient', 'follow_up', 'annual_physical', 'sick_visit'].includes(visit_type)) {
+        visit_type = 'sick_visit';
       }
-
-      // In production, make API call
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...formData,
-          patientId: user.patientId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create appointment');
-      }
-
+      
+      // Create appointment with backend-expected format
+      const appointmentData = {
+        slot_id: selectedSlotId,
+        visit_type: visit_type,
+        reason: formData.reasonForVisit,
+      };
+      
+      console.log('📤 Submitting appointment:', appointmentData);
+      
+      const response = await createAppointment(appointmentData, token);
+      console.log('✅ Appointment created:', response);
+      
       setSuccess(true);
     } catch (error) {
-      console.error('Error submitting appointment:', error);
-      alert('Failed to schedule appointment. Please try again.');
+      console.error('❌ Error submitting appointment:', error);
+      alert(`Failed to schedule appointment: ${error.message || 'Please try again.'}`);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Helper to format time from 24-hour to 12-hour format
+  const formatTime = (time24) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
   };
 
   if (authLoading || loading) {
@@ -162,11 +212,9 @@ export default function ScheduleAppointmentPage() {
           <div className="schedule-content">
             <div className="success-card">
               <div className="success-icon">✓</div>
-              <h2>Appointment Request Submitted</h2>
+              <h2>Appointment Scheduled Successfully!</h2>
               <p>
-                Thank you for scheduling with ClinicMate. We've received your
-                appointment request and will contact you shortly to confirm your
-                appointment time.
+                Your appointment has been confirmed with ClinicMate.
               </p>
               <p className="confirmation-note">
                 A confirmation email has been sent to <strong>{formData.email}</strong>
@@ -191,6 +239,8 @@ export default function ScheduleAppointmentPage() {
                       location: '',
                       reasonForVisit: '',
                     });
+                    setSelectedSlotId('');
+                    setAvailableSlots([]);
                   }}
                 >
                   Schedule Another
@@ -212,7 +262,7 @@ export default function ScheduleAppointmentPage() {
           <div className="page-header">
             <h1>Schedule an Appointment</h1>
             <p className="page-subtitle">
-              Please fill out the form below and we'll contact you to confirm your appointment.
+              Please fill out the form below to schedule your appointment.
             </p>
           </div>
 
@@ -318,25 +368,27 @@ export default function ScheduleAppointmentPage() {
                     required
                   >
                     <option value="">Select visit type...</option>
+                    <option value="New Patient">New Patient Consultation</option>
+                    <option value="Follow-up">Follow-up Visit</option>
+                    <option value="General Checkup">Annual Physical / General Checkup</option>
+                    <option value="sick_visit">Sick Visit</option>
                     {specialties.map((spec) => (
                       <option key={spec} value={spec}>
-                        {spec}
+                        {spec} Consultation
                       </option>
                     ))}
-                    <option value="General Checkup">General Checkup</option>
-                    <option value="Follow-up">Follow-up Visit</option>
-                    <option value="New Patient">New Patient Consultation</option>
                   </select>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="provider">Preferred Provider</label>
+                  <label htmlFor="provider">Select Provider *</label>
                   <select
                     id="provider"
                     name="provider"
                     value={formData.provider}
                     onChange={handleChange}
+                    required
                   >
-                    <option value="">Any available provider</option>
+                    <option value="">Select a provider...</option>
                     {doctors.map((doc) => (
                       <option key={doc.doctor_id} value={doc.doctor_id}>
                         Dr. {doc.first_name} {doc.last_name} - {doc.specialty?.specialty_name || 'General'}
@@ -367,35 +419,52 @@ export default function ScheduleAppointmentPage() {
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-field">
-                  <label htmlFor="preferredDate">Preferred Date *</label>
-                  <input
-                    type="date"
-                    id="preferredDate"
-                    name="preferredDate"
-                    value={formData.preferredDate}
-                    onChange={handleChange}
-                    min={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="preferredTime">Preferred Time *</label>
-                  <select
-                    id="preferredTime"
-                    name="preferredTime"
-                    value={formData.preferredTime}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select time...</option>
-                    <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
-                    <option value="afternoon">Afternoon (12:00 PM - 5:00 PM)</option>
-                    <option value="evening">Evening (5:00 PM - 8:00 PM)</option>
-                  </select>
-                </div>
+              <div className="form-field full-width">
+                <label htmlFor="preferredDate">Appointment Date *</label>
+                <AvailabilityCalendar
+                  providerId={formData.provider}
+                  onDateSelect={(date) => {
+                    setFormData(prev => ({ ...prev, preferredDate: date }));
+                    setSelectedSlotId('');
+                  }}
+                  selectedDate={formData.preferredDate}
+                  getToken={getToken}
+                />
               </div>
+
+              {/* Show available time slots */}
+              {formData.provider && formData.preferredDate && (
+                <div className="form-field full-width">
+                  <label htmlFor="timeSlot">Available Time Slots *</label>
+                  {loadingSlots ? (
+                    <p style={{ color: 'var(--slate-600)', padding: '1rem' }}>
+                      Loading available time slots...
+                    </p>
+                  ) : availableSlots.length === 0 ? (
+                    <p style={{ color: 'var(--red-600)', padding: '1rem' }}>
+                      No available time slots for this provider on this date. Please select a different date or provider.
+                    </p>
+                  ) : (
+                    <select
+                      id="timeSlot"
+                      value={selectedSlotId}
+                      onChange={(e) => setSelectedSlotId(e.target.value)}
+                      required
+                      style={{ width: '100%' }}
+                    >
+                      <option value="">Select a time slot...</option>
+                      {availableSlots
+                        .filter(slot => !slot.is_booked)
+                        .map(slot => (
+                          <option key={slot.id} value={slot.id}>
+                            {formatTime(slot.slot_start)} - {formatTime(slot.slot_end)}
+                          </option>
+                        ))
+                      }
+                    </select>
+                  )}
+                </div>
+              )}
 
               <div className="form-field full-width">
                 <label htmlFor="reasonForVisit">Reason for Visit *</label>
@@ -452,9 +521,9 @@ export default function ScheduleAppointmentPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={submitting}
+                disabled={submitting || !selectedSlotId}
               >
-                {submitting ? 'Submitting...' : 'Request Appointment'}
+                {submitting ? 'Scheduling...' : 'Schedule Appointment'}
               </button>
             </div>
           </form>

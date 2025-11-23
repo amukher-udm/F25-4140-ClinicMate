@@ -54,23 +54,27 @@ export async function getVisitTypes(providerId, token) {
     return await request(`/api/providers/${providerId}/visit-types`, { token });
   } catch (err) {
     if (err.status === 404) {
-      const providers = await request('/api/explore_page');
-      const doctor = providers.doctors?.find(
-        (doc) => String(doc.doctor_id) === String(providerId)
-      );
-      return doctor?.specialty ? [doctor.specialty] : [];
+      // Fallback: Return common visit types
+      return [
+        { value: 'new_patient', label: 'New Patient Visit' },
+        { value: 'follow_up', label: 'Follow-up Visit' },
+        { value: 'sick_visit', label: 'Sick Visit' },
+        { value: 'annual_physical', label: 'Annual Physical' },
+      ];
     }
     throw err;
   }
 }
 
+// Fixed: Backend uses /api/provider_availability/:id/slots with date query param
 export function getSlots({ providerId, date }, token) {
   const params = new URLSearchParams({ date });
-  return request(`/api/providers/${providerId}/slots?${params.toString()}`, {
+  return request(`/api/provider_availability/${providerId}/slots?${params.toString()}`, {
     token,
   });
 }
 
+// Create a new appointment
 export function createAppointment(payload, token) {
   return request('/api/appointments', {
     method: 'POST',
@@ -79,24 +83,35 @@ export function createAppointment(payload, token) {
   });
 }
 
+// Update appointment details (visit_type, reason/notes)
 export function updateAppointment(id, body, token) {
-  return request(`/api/appointments/${id}`, {
+  return request(`/api/appointments/${id}/update`, {
     method: 'PATCH',
     body: JSON.stringify(body),
     token,
   });
 }
 
+// Fixed: Backend uses PATCH method, not POST
 export function rescheduleAppointment(id, payload, token) {
   return request(`/api/appointments/${id}/reschedule`, {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
     token,
   });
 }
 
-export function listAppointments({ status, page = 1, pageSize = 10 } = {}, token) {
-  const params = new URLSearchParams({ page, pageSize });
-  if (status) params.append('status', status);
+// Cancel an appointment
+export function cancelAppointment(id, token) {
+  return request(`/api/appointments/${id}/cancel`, {
+    method: 'PATCH',
+    token,
+  });
+}
+
+// Fixed: Backend uses status, sort_by, and order params (not page/pageSize)
+export function listAppointments({ status, sortBy = 'date', order = 'desc' } = {}, token) {
+  const params = new URLSearchParams({ sort_by: sortBy, order });
+  if (status && status !== 'all') params.append('status', status);
   return request(`/api/appointments?${params.toString()}`, { token });
 }
