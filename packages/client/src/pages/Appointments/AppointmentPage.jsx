@@ -4,19 +4,45 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../state/AuthContext';
+import { listAppointments, cancelAppointment, rescheduleAppointment, getSlots } from '../../api/appointments';
+import AvailabilityCalendar from '../../components/AppointmentCalendar/AvailabilityCalendar';
 
 export default function AppointmentPage() {
   const { user, loading: authLoading, getToken } = useAuth();
-  const [doctors, setDoctors] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [filter, setFilter] = useState('All');
-  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [filter, setFilter] = useState('all');
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedSlotId, setSelectedSlotId] = useState('');
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const navigate = useNavigate();
+
+  // Fetch appointments from backend
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      const token = getToken();
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await listAppointments({ status: filter }, token);
+      console.log('📋 Appointments fetched:', response);
+      setAppointments(response.data || []);
+      setError(false);
+    } catch (err) {
+      console.error('❌ Error fetching appointments:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -26,73 +52,144 @@ export default function AppointmentPage() {
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        const token = getToken();
-        const res = await fetch('/api/explore_page', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        
-        const json = await res.json();
-        const allDoctors = json.doctors || [];
-        
-        // Deterministically select 3 doctors based on patient ID
-        const patientIdNum = parseInt(user.patientId) || 1;
-        const selectedDoctors = [];
-        
-        for (let i = 0; i < Math.min(3, allDoctors.length); i++) {
-          const index = (patientIdNum + i * 7) % allDoctors.length;
-          selectedDoctors.push(allDoctors[index]);
+    fetchAppointments();
+  }, [user, authLoading, navigate, filter]);
+
+  // Fetch available slots when date changes in reschedule modal
+  useEffect(() => {
+    if (showRescheduleModal && newDate && selectedAppointment) {
+      const fetchSlots = async () => {
+        try {
+          setLoadingSlots(true);
+          const token = getToken();
+          const slots = await getSlots({
+            providerId: selectedAppointment.provider_id,
+            date: newDate
+          }, token);
+          console.log('🕐 Available slots:', slots);
+          setAvailableSlots(slots || []);
+        } catch (err) {
+          console.error('❌ Error fetching slots:', err);
+          setAvailableSlots([]);
+        } finally {
+          setLoadingSlots(false);
         }
-        
-        setDoctors(selectedDoctors);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching doctors:', err);
-        setError(true);
-        setLoading(false);
-      }
-    };
+      };
+      fetchSlots();
+    }
+  }, [newDate, showRescheduleModal, selectedAppointment]);
 
-    fetchData();
-  }, [user, authLoading, navigate, getToken]);
-
-  // Generate appointments from the fetched doctors for this specific user
-  const appointments = doctors.map((doctor, index) => {
-    const statuses = ['Confirmed', 'Pending', 'Cancelled'];
-    const dates = [
-      '10:00 A.M November 15, 2025',
-      '02:30 P.M November 20, 2025',
-      '04:00 P.M November 25, 2025'
-    ];
-    
-    const doctorName = `${doctor.first_name} ${doctor.last_name}`;
-    const specialty = doctor.specialty?.specialty_name || 'General Practice';
-    const hospital = doctor.hospital?.name || 'Medical Center';
-    const hospitalAddress = doctor.hospital?.address 
-      ? `${doctor.hospital.address.city}, ${doctor.hospital.address.state}`
-      : '';
-
-    return {
-      id: `${user.patientId}-${doctor.doctor_id}`,
-      patientName: user.name,
-      doctor: `Dr. ${doctor.last_name} - ${specialty}`,
-      hospital: hospital,
-      hospitalAddress: hospitalAddress,
-      time: dates[index % dates.length],
-      status: statuses[index % statuses.length],
-    };
-  });
-
-  const filteredAppointments = appointments.filter(a =>
-    filter === 'All' ? true : a.status === filter
-  );
-
-  const handleCancelAppointment = () => {
-
-    setShowCancelConfirmation(false);
-    setSelectedAppointment(null);
+  const handleCancelAppointment = async () => {
+    try {
+      const token = getToken();
+      await cancelAppointment(selectedAppointment.id, token);
+      console.log('✅ Appointment cancelled successfully');
+      
+      // Refresh appointments list
+      await fetchAppointments();
+      
+      setShowCancelConfirmation(false);
+      setSelectedAppointment(null);
+    } catch (err) {
+      console.error('❌ Error cancelling appointment:', err);
+      alert('Failed to cancel appointment: ' + err.message);
+    }
   };
+
+  const handleRescheduleAppointment = async () => {
+    if (!selectedSlotId) {
+      alert('Please select a time slot');
+      return;
+    }
+
+    try {
+      const token = getToken();
+      await rescheduleAppointment(
+        selectedAppointment.id,
+        { new_slot_id: selectedSlotId },
+        token
+      );
+      console.log('✅ Appointment rescheduled successfully');
+      
+      // Refresh appointments list
+      await fetchAppointments();
+      
+      setShowRescheduleModal(false);
+      setSelectedAppointment(null);
+      setNewDate('');
+      setSelectedSlotId('');
+      setAvailableSlots([]);
+    } catch (err) {
+      console.error('❌ Error rescheduling appointment:', err);
+      alert('Failed to reschedule appointment: ' + err.message);
+    }
+  };
+
+  // Format appointment data for display
+  const formatAppointments = (appointments) => {
+    return appointments.map(apt => {
+      const date = apt.slot?.date || '';
+      const startTime = apt.slot?.slot_start || '';
+      const endTime = apt.slot?.slot_end || '';
+      
+      // Format date and time for display
+      const dateObj = date ? new Date(date) : null;
+      const dateStr = dateObj ? dateObj.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }) : '';
+      
+      const timeStr = startTime ? `${formatTime(startTime)}` : '';
+      
+      const hospitalName = apt.hospital?.name || 'Medical Center';
+      const hospitalCity = apt.hospital?.address?.city || '';
+      const hospitalState = apt.hospital?.address?.state || '';
+      const hospitalAddress = hospitalCity && hospitalState 
+        ? `${hospitalCity}, ${hospitalState}` 
+        : '';
+
+      // Get doctor name from the joined doctor table
+      const doctorFirstName = apt.doctor?.first_name || '';
+      const doctorLastName  = apt.doctor?.last_name  || '';
+      const doctorName = doctorFirstName && doctorLastName 
+        ? `Dr. ${doctorFirstName} ${doctorLastName}`
+        : `Provider #${apt.provider_id}`;
+
+      const specialty = apt.doctor?.specialty?.specialty_name || 'General Practice';
+
+return {
+        id: apt.id,
+        appointmentId: apt.id,
+        provider_id: apt.provider_id,
+        slot_id: apt.slot_id,
+        patientName: user.name,
+        doctor: doctorName,
+        specialty: specialty,
+        hospital: hospitalName,
+        hospitalAddress: hospitalAddress,
+        time: `${timeStr} ${dateStr}`,
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        status: apt.status ? apt.status.charAt(0).toUpperCase() + apt.status.slice(1) : 'Unknown',
+        visitType: apt.visit_type,
+        notes: apt.notes || apt.reason,
+      };
+    });
+  };
+
+  // Helper to format time from 24-hour to 12-hour format
+  const formatTime = (time24) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'P.M' : 'A.M';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  const formattedAppointments = formatAppointments(appointments);
 
   if (authLoading || loading) {
     return (
@@ -141,59 +238,54 @@ export default function AppointmentPage() {
               className="appointments-search"
             />
             <div className="appointments-filters">
-              {['All', 'Confirmed', 'Pending', 'Cancelled'].map(tab => (
+              {['all', 'scheduled', 'completed', 'cancelled'].map(tab => (
                 <button
                   key={tab}
                   className={`btn btn-pill filter-btn ${filter === tab ? 'active' : ''}`}
                   onClick={() => setFilter(tab)}
                 >
-                  {tab}
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
           </div>
 
-          {filteredAppointments.length === 0 ? (
+          {formattedAppointments.length === 0 ? (
             <div className="appointments-list">
               <p style={{ textAlign: 'center', color: 'var(--slate-600)', padding: '2rem' }}>
-                No {filter.toLowerCase()} appointments found.
+                No {filter !== 'all' ? filter : ''} appointments found.
               </p>
             </div>
           ) : (
             <div className="appointments-list">
-              {filteredAppointments.map(a => (
+              {formattedAppointments.map(a => (
                 <div 
                   key={a.id} 
                   className="appointment-card"
                   onClick={() => {
-                    if(a.status === 'Pending' || a.status === 'Confirmed') {
-                      setSelectedAppointment({
-                        doctorName: a.doctor,
-                        doctorSpecialty: a.doctor.split(' - ')[1],
-                        hospital: a.hospital,
-                        hospitalAddress: a.hospitalAddress,
-                        time: a.time
-                      });
+                    if(a.status === 'Scheduled' || a.status === 'Pending') {
+                      setSelectedAppointment(a);
                     }
                   }}
-                  style={{ cursor: (a.status === 'Pending' || a.status === 'Confirmed') ? 'pointer' : 'default' }}
+                  style={{ cursor: (a.status === 'Scheduled' || a.status === 'Pending') ? 'pointer' : 'default' }}
                 >
-
                   <div className="appointment-info">
                     <div>
                       <h3 className="appointment-name">{a.patientName}</h3>
-                      <p className="appointment-doctor">{a.doctor}</p>
+                      <p className="appointment-doctor">
+                        {a.doctor}
+                        {a.specialty && <span style={{ color: 'var(--slate-500)', fontSize: '0.9em' }}> • {a.specialty}</span>}
+                      </p>
                       <p className="appointment-hospital">
                         🏥 {a.hospital}
                         {a.hospitalAddress && ` - ${a.hospitalAddress}`}
                       </p>
                       <p className="appointment-time">📅 {a.time}</p>
+                      {a.visitType && <p className="appointment-visit-type">Visit: {a.visitType.replace('_', ' ')}</p>}
                     </div>
                   </div>
                   <span
-                    className={`appointment-status ${
-                      a.status.toLowerCase()
-                    }`}
+                    className={`appointment-status ${a.status.toLowerCase()}`}
                   >
                     {a.status}
                   </span>
@@ -217,14 +309,19 @@ export default function AppointmentPage() {
           <div className="appointment-modal" onClick={e => e.stopPropagation()}>
             <button className="modal-close-btn" onClick={() => setSelectedAppointment(null)}>✕</button>
             <h2>Appointment Details</h2>
-            <p><strong>Doctor:</strong> {selectedAppointment.doctorName}</p>
-            {/* <p><strong>Specialty:</strong> {selectedAppointment.doctorSpecialty}</p> */}
+            <p><strong>Doctor:</strong> {selectedAppointment.doctor}</p>
+            {selectedAppointment.specialty && <p><strong>Specialty:</strong> {selectedAppointment.specialty}</p>}
             <p><strong>Hospital:</strong> {selectedAppointment.hospital} {selectedAppointment.hospitalAddress && `- ${selectedAppointment.hospitalAddress}`}</p>
             <p><strong>Date & Time:</strong> {selectedAppointment.time}</p>
+            {selectedAppointment.visitType && <p><strong>Visit Type:</strong> {selectedAppointment.visitType.replace('_', ' ')}</p>}
+            {selectedAppointment.notes && <p><strong>Notes:</strong> {selectedAppointment.notes}</p>}
             <div className="modal-actions">
               <button 
                 className="btn btn-primary"
-                onClick={() => setShowRescheduleModal(true)}
+                onClick={() => {
+                  setShowRescheduleModal(true);
+                  setSelectedAppointment(prev => ({ ...prev }));
+                }}
               >
                 Reschedule
               </button>
@@ -233,7 +330,7 @@ export default function AppointmentPage() {
                 onClick={() => setShowCancelConfirmation(true)}
               >
                 Cancel
-            </button>
+              </button>
             </div>
           </div>
         </div>
@@ -252,20 +349,12 @@ export default function AppointmentPage() {
               ✕
             </button>
             <h2>Cancel Appointment</h2>
-            <p>
-              <strong>Doctor:</strong> {selectedAppointment.doctorName}
+            <p><strong>Doctor:</strong> {selectedAppointment.doctor}</p>
+            {selectedAppointment.specialty && <p><strong>Specialty:</strong> {selectedAppointment.specialty}</p>}
+            <p><strong>Hospital:</strong> {selectedAppointment.hospital}{' '}
+              {selectedAppointment.hospitalAddress && `- ${selectedAppointment.hospitalAddress}`}
             </p>
-            <p>
-              <strong>Specialty:</strong> {selectedAppointment.doctorSpecialty}
-            </p>
-            <p>
-              <strong>Hospital:</strong> {selectedAppointment.hospital}{' '}
-              {selectedAppointment.hospitalAddress &&
-                `- ${selectedAppointment.hospitalAddress}`}
-            </p>
-            <p>
-              <strong>Date & Time:</strong> {selectedAppointment.time}
-            </p>
+            <p><strong>Date & Time:</strong> {selectedAppointment.time}</p>
             <p className="cancel-confirmation-text">
               Are you sure that you would like to cancel this appointment?
             </p>
@@ -284,55 +373,102 @@ export default function AppointmentPage() {
       {showRescheduleModal && selectedAppointment && (
         <div
           className="cancel-modal-overlay"
-          onClick={() => setShowRescheduleModal(false)}
+          onClick={() => {
+            setShowRescheduleModal(false);
+            setNewDate('');
+            setSelectedSlotId('');
+            setAvailableSlots([]);
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
         >
-          <div className="cancel-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="cancel-modal" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              maxWidth: '650px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              position: 'relative'
+            }}
+          >
             <button
               className="cancel-modal-close-btn"
-              onClick={() => setShowRescheduleModal(false)}
+              onClick={() => {
+                setShowRescheduleModal(false);
+                setNewDate('');
+                setSelectedSlotId('');
+                setAvailableSlots([]);
+              }}
             >
               ✕
             </button>
 
             <h2>Reschedule Appointment</h2>
 
-            <p><strong>Doctor:</strong> {selectedAppointment.doctorName}</p>
-            {/* <p><strong>Specialty:</strong> {selectedAppointment.doctorSpecialty}</p> */}
+            <p><strong>Doctor:</strong> {selectedAppointment.doctor}</p>
+            {selectedAppointment.specialty && <p><strong>Specialty:</strong> {selectedAppointment.specialty}</p>}
             <p><strong>Hospital:</strong> {selectedAppointment.hospital} {selectedAppointment.hospitalAddress && `- ${selectedAppointment.hospitalAddress}`}</p>
             <p><strong>Current Time:</strong> {selectedAppointment.time}</p>
 
             <div className="reschedule-inputs">
-              <label>
-                New Date:
-                <input 
-                  type="date" 
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                />
-              </label>
+              <AvailabilityCalendar
+                providerId={selectedAppointment.provider_id}
+                onDateSelect={(date) => {
+                  setNewDate(date);
+                  setSelectedSlotId('');
+                }}
+                selectedDate={newDate}
+                getToken={getToken}
+              />
 
-              <label>
-                New Time:
-                <select
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                >
-                  <option value="">Select a time...</option>
-                  <option value="morning">Morning (8:00 AM - 12:00 PM)</option>
-                  <option value="afternoon">Afternoon (12:00 PM - 5:00 PM)</option>
-                  <option value="evening">Evening (5:00 PM - 8:00 PM)</option>
-                </select>
-              </label>
+              {newDate && (
+                <label style={{ marginTop: '1rem' }}>
+                  Available Time Slots:
+                  {loadingSlots ? (
+                    <p>Loading available slots...</p>
+                  ) : availableSlots.length === 0 ? (
+                    <p>No available slots for this date</p>
+                  ) : (
+                    <select
+                      value={selectedSlotId}
+                      onChange={(e) => setSelectedSlotId(e.target.value)}
+                    >
+                      <option value="">Select a time slot...</option>
+                      {availableSlots
+                        .filter(slot => !slot.is_booked)
+                        .map(slot => (
+                          <option key={slot.id} value={slot.id}>
+                            {formatTime(slot.slot_start)} - {formatTime(slot.slot_end)}
+                          </option>
+                        ))
+                      }
+                    </select>
+                  )}
+                </label>
+              )}
             </div>
 
             <div className="cancel-modal-actions">
               <button 
                 className="btn btn-primary"
-                onClick={() => {
-                  // For now, just close modal. Later: Update backend.
-                  setShowRescheduleModal(false);
-                  setSelectedAppointment(null);
-                }}
+                onClick={handleRescheduleAppointment}
+                disabled={!selectedSlotId || loadingSlots}
               >
                 Save Changes
               </button>
@@ -340,7 +476,6 @@ export default function AppointmentPage() {
           </div>
         </div>
       )}
-
 
       <Footer />
     </>

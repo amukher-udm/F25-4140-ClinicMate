@@ -529,35 +529,34 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   const statusFilter = req.query.status; // all, scheduled, completed, cancelled
   const sortBy = req.query.sort_by;
   const order = req.query.order === "asc";
-  // Build the query
+
+  // 1) Base query: appointments + slot + hospital
   let query = req.supabase
     .from("appointments")
-    .select(
-      `
-        *,
-        reason: notes,
-        slot: provider_availability!slot_id (
-          date,
-          slot_start,
-          slot_end
-        ),
-        hospital: hospitals!provider_id (
+    .select(`
+      *,
+      reason: notes,
+      slot: provider_availability!slot_id (
+        date,
+        slot_start,
+        slot_end
+      ),
+      hospital: hospitals!provider_id (
+        hospital_id,
         name,
         address: address_id(*)
-        )
-      `
-    )
+      )
+    `)
     .eq("user_id", req.user.id);
+
   if (statusFilter && statusFilter !== "all") {
     query = query.eq("status", statusFilter);
   }
-  // sorting
+
   if (sortBy && sortBy !== "date") {
-    // e.g., ?sort_by=created_at
     query = query.order(sortBy, { ascending: order });
   } else {
-    // if no sorting preference is provided, sort by slot
-    // Sort by date, then by time, from the joined table
+    // default: sort by date/time from slot
     query = query.order("date", {
       foreignTable: "slot",
       ascending: order,
@@ -568,15 +567,64 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
     });
   }
 
-  // executing the query
-  const { data, error } = await query;
+  const { data: rawAppointments, error } = await query;
+
   if (error) {
-    return res
-      .status(400)
-      .json({ "Error fetching appointments:": error.message });
+    console.error("Error fetching appointments:", error);
+    return res.status(400).json({ error: error.message });
   }
-  res.json({ data });
+
+  if (!rawAppointments || rawAppointments.length === 0) {
+    return res.json({ data: [] });
+  }
+
+  // 2) Collect hospital IDs from provider_id (the provider is the hospital)
+  const hospitalIds = [
+    ...new Set(
+      rawAppointments
+        .map((apt) => apt.provider_id)
+        .filter((id) => id !== null && id !== undefined)
+    ),
+  ];
+
+  // 3) Fetch doctors for those hospitals, including specialty
+  const { data: doctorRows, error: doctorError } = await req.supabase
+    .from("doctors")
+    .select(`
+      doctor_id,
+      first_name,
+      last_name,
+      email,
+      phone_number,
+      hospital_id,
+      specialty: specialty_id (
+        specialty_name
+      )
+    `)
+    .in("hospital_id", hospitalIds);
+
+  if (doctorError) {
+    console.error("Error fetching doctors:", doctorError);
+    // We can still return appointments without doctor info if you want:
+    // return res.status(400).json({ error: doctorError.message });
+  }
+
+  // 4) Build a map: hospital_id -> doctor
+  const doctorMap = {};
+  (doctorRows || []).forEach((doc) => {
+    // assuming one doctor per hospital for this project
+    doctorMap[doc.hospital_id] = doc;
+  });
+
+  // 5) Attach doctor info to each appointment
+  const enrichedAppointments = rawAppointments.map((apt) => ({
+    ...apt,
+    doctor: doctorMap[apt.provider_id] || null,
+  }));
+
+  res.json({ data: enrichedAppointments });
 });
+
 
 /**
  * POST /api/appointments
