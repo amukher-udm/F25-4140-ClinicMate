@@ -27,7 +27,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-//Check Auth
+/**
+ * Middleware to check authentication for protected routes.
+ *
+ * Headers:
+ * - Authorization: Bearer <token>
+ *
+ * Returns:
+ * - JSON: Error: { error: "Unauthorized: ..." }
+ * - On success, attaches `user` to `req`, supabase client to `req.supabase`, and calls `next()`.
+ */
 const checkAuth = async (req, res, next) => {
   // Check for an 'Authorization' header
   const authHeader = req.headers.authorization;
@@ -78,7 +87,21 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "Hello from Express!" });
 });
 
-// Sign up - create auth user and patient record
+/**
+ * POST /api/sign_up
+ * Description:
+ * Registers a new user with email and password, and creates a patient record.
+ *
+ * Request Body:
+ * - email (string): User's email
+ * - password (string): User's password
+ * - first_name (string): Patient's first name
+ * - last_name (string): Patient's last name
+ *
+ * Returns:
+ * - JSON: Success: { message: "Sign-up successful", session: { ... } }
+ *   JSON: Failure: { error: "Error message describing the issue" }
+ */
 app.post("/api/sign_up", async (req, res) => {
   const formData = req.body;
 
@@ -173,7 +196,19 @@ app.post("/api/sign_up", async (req, res) => {
   }
 });
 
-// Log in - return session token
+/**
+ * POST /api/log_in
+ * Description:
+ * Authenticates a user with email and password
+ *
+ * Request Body:
+ * - email (string): User's email
+ * - password (string): User's password
+ *
+ * Returns:
+ * - JSON: Success: { message: "Login successful", session: { ... } }
+ *   JSON: Failure: { error: "Error message describing the issue" }
+ */
 app.post("/api/log_in", async (req, res) => {
   const formData = req.body;
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -191,21 +226,34 @@ app.post("/api/log_in", async (req, res) => {
   });
 });
 
-// Log out
-app.post("/api/log_out", checkAuth, async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader.split(" ")[1];
-
-  const { error } = await supabase.auth.signOut(token);
+/**
+ * POST /api/log_out
+ * Description:
+ * Logs out the currently authenticated user by invalidating their session.
+ */
+app.post("/api/log_out", async (req, res) => {
+  const { error } = await supabase.auth.signOut();
 
   if (error) {
-    return res.status(400).json({ error: error.message });
+    // expired token or connection issue
+    return res.json({ error: error.message });
   }
 
   return res.json({ message: "Logout successful" });
 });
 
-// Reset password
+/**
+ * POST /api/reset_password
+ * Description:
+ * Initiates a password reset process by sending a reset email to the user.
+ *
+ * Request Body:
+ * - email (string): User's email
+ *
+ * Returns:
+ * - JSON: Success: { message: "Password reset email sent" }
+ *   JSON: Failure: { error: "Error message describing the issue" }
+ */
 app.post("/api/reset_password", async (req, res) => {
   const { email } = req.body;
 
@@ -220,9 +268,16 @@ app.post("/api/reset_password", async (req, res) => {
   return res.json({ message: "Password reset email sent" });
 });
 
-// Get profile data for authenticated user
+/**
+ * GET /api/profile_data
+ * Description:
+ * Fetches the profile data for the authenticated user, including nested address information.
+ *
+ * returns:
+ * - JSON: { patients: { ...patientData, address: { ...addressData }, email: userEmail } }
+ */
 app.get("/api/profile_data", checkAuth, async (req, res) => {
-  const { data, error } = await supabase
+  const { data, error } = await req.supabase
     .from("patients")
     .select(
       `
@@ -247,12 +302,23 @@ app.get("/api/profile_data", checkAuth, async (req, res) => {
   });
 });
 
-// Update patient profile
+/**
+ * PUT /api/update_profile
+ * Description:
+ * Updates the profile information for the authenticated user.
+ *
+ * Request Body:
+ * - first_name (string): Patient's first name
+ * - last_name (string): Patient's last name
+ * - phone_number (string): Patient's phone number
+ * - gender (string): Patient's gender
+ * - middle_initial (string): Patient's middle initial
+ */
 app.put("/api/update_profile", checkAuth, async (req, res) => {
   const { first_name, last_name, phone_number, gender, middle_initial } =
     req.body;
 
-  const { error } = await supabase
+  const { error: updateError } = await req.supabase
     .from("patients")
     .update({
       first_name,
@@ -263,15 +329,25 @@ app.put("/api/update_profile", checkAuth, async (req, res) => {
     })
     .eq("user_id", req.user.id);
 
-  if (error) {
-    console.error("Error updating profile:", error);
+  if (updateError) {
+    console.error("Error updating profile:", updateError.message);
     return res.status(500).json({ error: "Failed to update profile" });
   }
 
   res.json({ message: "Profile updated successfully" });
 });
 
-// Update patient address
+/**
+ * PUT /api/update_address
+ * Description:
+ * Updates or creates the address information for the authenticated user.
+ *
+ * Request Body:
+ * - street (string): Street address
+ * - city (string): City
+ * - state (string): State
+ * - zip_code (string): ZIP code
+ */
 app.put("/api/update_address", checkAuth, async (req, res) => {
   const { street, city, state, zip_code } = req.body;
 
@@ -279,7 +355,7 @@ app.put("/api/update_address", checkAuth, async (req, res) => {
     console.log("Updating address:", { street, city, state, zip_code });
 
     // First get the patient's address_fk
-    const { data: patient, error: patientError } = await supabase
+    const { data: patient, error: patientError } = await req.supabase
       .from("patients")
       .select("address_fk")
       .eq("user_id", req.user.id)
@@ -295,7 +371,7 @@ app.put("/api/update_address", checkAuth, async (req, res) => {
     if (patient?.address_fk) {
       // Update existing address
       console.log("Updating existing address:", patient.address_fk);
-      const { error } = await supabase
+      const { error } = await req.supabase
         .from("address")
         .update({ street, city, state, zip_code })
         .eq("address_id", patient.address_fk);
@@ -308,7 +384,7 @@ app.put("/api/update_address", checkAuth, async (req, res) => {
     } else {
       // Create new address
       console.log("Creating new address");
-      const { data: newAddress, error: insertError } = await supabase
+      const { data: newAddress, error: insertError } = await req.supabase
         .from("address")
         .insert({ street, city, state, zip_code })
         .select()
@@ -322,7 +398,7 @@ app.put("/api/update_address", checkAuth, async (req, res) => {
       console.log("Linking address to patient:", newAddress.address_id);
 
       // Link address to patient
-      const { error: updateError } = await supabase
+      const { error: updateError } = await req.supabase
         .from("patients")
         .update({ address_fk: newAddress.address_id })
         .eq("user_id", req.user.id);
@@ -343,7 +419,15 @@ app.put("/api/update_address", checkAuth, async (req, res) => {
   }
 });
 
-// API explore page that pulls nested data
+/**
+ * GET /api/explore_page
+ * Description:
+ * Fetches data for the explore page, including hospitals with addresses and doctors with specialties.
+ *
+ * Returns:
+ * - JSON: Success { hospitals: [ ... ], doctors: [ ... ] }
+ *  JSON: Failure { error: "Error message describing the issue" }
+ */
 app.get("/api/explore_page", async (req, res) => {
   try {
     // Fetch all tables separately
@@ -416,7 +500,7 @@ app.get("/api/provider_availability/:id/slots", async (req, res) => {
   if (!date) {
     return res.status(400).json({ error: "Missing date query parameter" });
   }
-  const { data: available_times, error } = await req.supabase
+  const { data: available_times, error } = await supabase
     .from("provider_availability")
     .select("*")
     .eq("provider_id", providerId)
