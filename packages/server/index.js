@@ -982,6 +982,94 @@ app.get("/api/admin/appointments", checkAuth, async (req, res) => {
   res.json({ data });
 });
 
+
+/**
+ * GET /api/admin/insert_availability
+ * Description:
+ * inserts new provider availability slots into the provider_availability table
+ *
+ * Request Body:
+ * - provider_id (uuid, required): ID of the provider 
+ * - date (string, required): Date for the availability slot (format: YYYY-MM-DD)
+ * - slot_start (string, required): Start time of the slot (format: HH:MM:SS)
+ * - slot_end (string, required): End time of the slot (format: HH:MM:SS)
+ * 
+ * 
+ * - Success: { message: "Availability created successfully" }
+ * - Failure: { error: "Error message" }
+ */
+
+app.post("/api/admin/insert_availability", checkAuth, async (req, res) => {
+  if(req.user.role != "admin") { 
+    return res.status(400).json({ error: "Not Allowed: Admins only" });
+  }
+  const {provider_id, date, slot_start, slot_end} = req.body; 
+
+  if(!provider_id ||!date || !slot_start || !slot_end) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const {data, error} = await req.supabase 
+      .from("provider_availability")
+      .insert({
+        provider_id, 
+        date, 
+        slot_start,
+        slot_end, 
+        is_booked: false
+      })
+      if (error)
+      {
+        console.error("Error inserting availability:", error);
+        return res.status(400).json({ error: error.message });
+      }
+
+      res.json({ message: "Availability created successfully" }); 
+  } catch (err) {
+    console.error("Unexpected error inserting availability:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
+});
+
+/**
+ * GET /api/admin/delete_availability
+ * Description:
+ * Admin can delete an availablity slot by ID
+ * 
+ * URL Parameters: 
+ * - id (uuid): ID of the availability slot to delete
+ * 
+ * - Success: { message: "Availability deleted successfully" }
+ * - Failure: { error: "Error message" }
+ */
+
+app.delete("/api/admin/delete_availability", checkAuth, async (req, res) => {
+  if(req.user.role != "admin") { 
+    return res.status(400).json({ error: "Not Allowed: Admins only" });
+  } 
+
+  const slotId = req.query.id;
+
+  try {
+    const {data, error} = await req.supabase
+      .from("provider_availability")
+      .delete()
+      .eq("id", slotId)
+
+      if (error) {
+        console.error("Error deleting availability:" , error);
+        return res.status(400).json({error: error.message });
+      }
+
+      res.json({message: "Availability deleted successfully"})
+    } catch (error) { 
+      console.error("Error deleting availability:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }  
+  }); 
+
 // Start the server
 if (isDev) {
   // --- Development: use vite-express to run Vite as middleware ---
