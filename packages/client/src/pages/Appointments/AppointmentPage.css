@@ -208,11 +208,12 @@
   z-index: 1100;
 }
 
+/* ONLY CHANGED: max-width from 450px to 650px to fit calendar */
 .cancel-modal {
   background: white;
   padding: 32px;
   border-radius: 12px;
-  max-width: 450px;
+  max-width: 650px; /* ← CHANGED from 450px */
   width: 90%;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   position: relative;
@@ -278,4 +279,29 @@
   height: 40px;
   box-sizing: border-box;
   width: 65%;
+}
+
+/* Remove calendar shadow when inside modal (optional - keeps it clean) */
+.cancel-modal .availability-calendar {
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+}
+
+/* Make reschedule modal wider to fit calendar */
+.cancel-modal {
+  max-width: 650px !important; /* Increased from 450px */
+}
+
+/* Remove calendar shadow when inside modal */
+.cancel-modal .availability-calendar {
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+}
+
+/* Ensure modal overlay is properly positioned */
+.cancel-modal-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
