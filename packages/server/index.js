@@ -997,7 +997,6 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
     .select("*")
     .eq("hospital_id", appointment.provider_id)
     .maybeSingle();
-  console.log(patientData, hospital);
   const { data: slotData } = await req.supabase
     .from("provider_availability")
     .select("*")
@@ -1005,7 +1004,6 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
     .maybeSingle();
   if (patientData && patientData.notify_email && hospital) {
     // Send email notification
-    console.log("Sending reschedule email to:", patientData.email);
     await sendAppointmentUpdate(patientData.email, "updated", {
       date: slotData.date,
       time: slotData.slot_start,
