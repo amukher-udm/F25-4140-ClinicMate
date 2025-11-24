@@ -18,5 +18,8 @@
   },
   "dependencies": {
     "nodemailer": "^7.0.10"
+    "@supabase/supabase-js": "^2.81.1",
+    "react-router-dom": "^7.9.6",
+    "supabase": "^2.58.5"
   }
 }
