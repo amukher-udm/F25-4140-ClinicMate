@@ -1,0 +1,559 @@
+/* ---- Appointments Page ---- */
+.appointments-section {
+  padding: 40px 0;
+}
+
+.appointments-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--slate-900);
+  margin-bottom: 24px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.appointments-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.appointments-search {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.appointments-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  background: var(--indigo-50);
+  color: var(--slate-700);
+  border: none;
+  font-weight: 600;
+  padding: 8px 20px;
+}
+.filter-btn.active {
+  background: var(--indigo-100);
+  color: var(--indigo-700);
+}
+
+.scheduleAppointment-btn {
+  background: var(--indigo-50);
+  color: var(--slate-700);
+  border: none;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 999px; 
+  cursor: pointer;
+  
+}
+
+
+.scheduleAppointment-btn:hover {
+  background: var(--indigo-100);
+  color: var(--indigo-700);
+}
+
+.scheduleAppointment-container {
+  display: flex;
+  justify-content: center; 
+  margin: 24px 0; 
+}
+
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.appointment-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.appointment-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* .appointment-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+} */
+
+.appointment-name {
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.appointment-doctor {
+  color: var(--slate-600);
+}
+
+.appointment-time {
+  color: var(--slate-400);
+  font-size: 0.9rem;
+}
+
+.appointment-status {
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.appointment-status.confirmed {
+  background: #16a34a;
+  color: #fff;
+}
+
+.appointment-status.pending {
+  background: #facc15;
+  color: #1f2937;
+}
+
+.appointment-status.cancelled {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* Modal overlay */
+.appointment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal box */
+.appointment-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+/* Close button */
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Modal action buttons */
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.modal-actions .btn-primary {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.modal-actions .btn-cancel {
+  background-color: #dc2626;
+  color: white;
+}
+
+.modal-actions .btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.modal-actions .btn-cancel:hover {
+  background-color: #b91c1c;
+}
+
+.cancel-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+/* ONLY CHANGED: max-width from 450px to 650px to fit calendar */
+.cancel-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 650px; /* ← CHANGED from 450px */
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  position: relative;
+  text-align: center;
+}
+
+.cancel-modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.cancel-confirmation-text {
+  margin: 20px 0;
+  color: var(--slate-700);
+}
+
+.cancel-modal-actions .btn-cancel-appointment {
+  background-color: #dc2626;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.cancel-modal-actions .btn-cancel-appointment:hover {
+  background-color: #b91c1c;
+}
+
+.reschedule-inputs {
+  display: flex;
+  flex-direction: column; /* stack vertically */
+  align-items: center;
+  gap: 1rem; /* space between inputs */
+  margin: 1.2rem 0;
+}
+
+/* Each label wraps one input */
+.reschedule-inputs label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--slate-700);
+  width: 100%; /* full width now */
+}
+
+/* Input styling */
+.reschedule-inputs input,
+.reschedule-inputs select {
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--slate-300);
+  border-radius: 8px;
+  background: white;
+  height: 40px;
+  box-sizing: border-box;
+  width: 65%;
+}
+
+/* Remove calendar shadow when inside modal (optional - keeps it clean) */
+.cancel-modal .availability-calendar {
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+}
+
+/* Make reschedule modal wider to fit calendar */
+.cancel-modal {
+  max-width: 650px !important; /* Increased from 450px */
+}
+
+/* Remove calendar shadow when inside modal */
+.cancel-modal .availability-calendar {
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+}
+
+/* Ensure modal overlay is properly positioned */
+.cancel-modal-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.toast-notification {
+  position: fixed;       /* stays on top */
+  bottom: 20px;          /* 20px from the bottom */
+  right: 20px;           /* 20px from the right */
+  background-color: #333;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+  z-index: 9999;         /* very top */
+  opacity: 0.95;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+
+/* Sort controls container */
+.appointments-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.appointments-sort select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.appointments-sort select:hover {
+  border-color: #d1d5db;
+}
+
+.appointments-sort select:focus {
+  outline: none;
+  border-color: var(--indigo-500);
+}
+
+.appointments-sort button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.appointments-sort button:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Updated appointments controls to handle new layout */
+.appointments-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+/* Make search bar slightly smaller to fit sort controls */
+@media (min-width: 768px) {
+  .appointments-search {
+    flex: 0 1 300px;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .appointments-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .appointments-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .appointments-filters {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================
+   ANIMATED APPOINTMENTS LIST
+   Add this to your AppointmentPage.css
+   ============================================ */
+
+/* Fade and slide animation for appointment cards */
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger animation for list items */
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Animate each card with staggered delay */
+.appointment-card {
+  animation: fadeInSlide 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+/* Stagger delays for first 10 items */
+.appointment-card:nth-child(1) { animation-delay: 0.05s; }
+.appointment-card:nth-child(2) { animation-delay: 0.1s; }
+.appointment-card:nth-child(3) { animation-delay: 0.15s; }
+.appointment-card:nth-child(4) { animation-delay: 0.2s; }
+.appointment-card:nth-child(5) { animation-delay: 0.25s; }
+.appointment-card:nth-child(6) { animation-delay: 0.3s; }
+.appointment-card:nth-child(7) { animation-delay: 0.35s; }
+.appointment-card:nth-child(8) { animation-delay: 0.4s; }
+.appointment-card:nth-child(9) { animation-delay: 0.45s; }
+.appointment-card:nth-child(10) { animation-delay: 0.5s; }
+
+/* Smooth transitions for hover states */
+.appointment-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.appointment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Flash effect when sort/search changes */
+@keyframes flashBackground {
+  0% {
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+  100% {
+    background-color: white;
+  }
+}
+
+.appointment-card.sorting-flash {
+  animation: flashBackground 0.6s ease-out;
+}
+
+/* Sort indicator animation */
+.appointments-sort button {
+  transition: transform 0.3s ease;
+}
+
+.appointments-sort button.rotating {
+  animation: rotate180 0.3s ease-out;
+}
+
+@keyframes rotate180 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+}
+
+/* Pulse animation for "no results" message */
+@keyframes fadeInPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.appointments-list p {
+  animation: fadeInPulse 0.5s ease-out;
+}
+
+/* Loading skeleton animation (optional - for future use) */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.appointment-card.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #f8f8f8 50%,
+    #f0f0f0 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Smooth opacity transition for entire list */
+.appointments-list {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.appointments-list.transitioning {
+  opacity: 0.7;
+}
+
+/* Results counter animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-results-count {
+  animation: slideDown 0.3s ease-out;
+}
