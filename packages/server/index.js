@@ -717,7 +717,9 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
       user_id,
       slot_id,
       provider_id: slot.provider_id,
-    });
+    })
+    .select()
+    .maybeSingle();
 
   if (insert_error) {
     console.error("Appointment insert failed, rolling back slot...");
@@ -771,7 +773,7 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
   }
   const { data: appointment, error: fetch_error } = await req.supabase
     .from("appointments")
-    .select("slot_id, status")
+    .select("slot_id, status, user_id, provider_id")
     .eq("id", appointmentId)
     .maybeSingle();
   if (fetch_error) {
@@ -973,7 +975,8 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
       .from("appointments")
       .update(updates)
       .eq("id", appointmentId)
-      .select();
+      .select()
+      .maybeSingle();
 
   if (appointment_update_error) {
     return res.status(400).json({ error: appointment_update_error.message });
@@ -992,11 +995,17 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
   const { data: hospital, error: hospitalError } = await req.supabase
     .from("hospitals")
     .select("*")
-    .eq("id", appointment.provider_id)
+    .eq("hospital_id", appointment.provider_id)
     .maybeSingle();
-
+  console.log(patientData, hospital);
+  const { data: slotData } = await req.supabase
+    .from("provider_availability")
+    .select("*")
+    .eq("id", appointment.slot_id)
+    .maybeSingle();
   if (patientData && patientData.notify_email && hospital) {
     // Send email notification
+    console.log("Sending reschedule email to:", patientData.email);
     await sendAppointmentUpdate(patientData.email, "updated", {
       date: slotData.date,
       time: slotData.slot_start,
