@@ -805,7 +805,8 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
     .from("provider_availability")
     .update({ is_booked: false })
     .eq("id", appointment.slot_id)
-    .select();
+    .select()
+    .maybeSingle();
   if (slotError) {
     return res.status(400).json({ "Error freeing slot:": slotError.message });
   }
