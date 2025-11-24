@@ -276,4 +276,45 @@
       transition: none !important;
     }
   }
+
+  /* Modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5000;
+}
+
+/* Modal box */
+.modal-content {
+  background: white;
+  padding: 2rem;
+  width: 90%;
+  max-width: 480px;
+  border-radius: 12px;
+  position: relative;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.modal-content .btn {
+  margin-top: 16px;   /* adds space above the button */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
   
