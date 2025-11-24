@@ -22,6 +22,15 @@ export default function AppointmentPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const navigate = useNavigate();
 
+  //Toast Notification State & Trigger
+  const [toast, setToast] = useState({ show: false, message: '' }); 
+  const showToast = (message) => { 
+    setToast({ show: true, message });
+    setTimeout(() => {
+      setToast({ show: false, message: '' });
+    }, 3000); // toast disappears after 3 seconds
+  };
+
   // Fetch appointments from backend
   const fetchAppointments = async () => {
     try {
@@ -84,7 +93,8 @@ export default function AppointmentPage() {
       const token = getToken();
       await cancelAppointment(selectedAppointment.id, token);
       console.log('✅ Appointment cancelled successfully');
-      
+      showToast(`Appointment canceled for ${selectedAppointment.time}`);
+
       // Refresh appointments list
       await fetchAppointments();
       
@@ -110,6 +120,7 @@ export default function AppointmentPage() {
         token
       );
       console.log('✅ Appointment rescheduled successfully');
+      showToast(`Appointment rescheduled to ${newDate} ${availableSlots.find(s => s.id === selectedSlotId)?.slot_start}`);
       
       // Refresh appointments list
       await fetchAppointments();
@@ -194,12 +205,14 @@ return {
   if (authLoading || loading) {
     return (
       <>
+        
         <Navbar />
         <main className="container">
           <section className="appointments-section">
             <h1 className="appointments-title">My Appointments</h1>
             <p>Loading your appointments...</p>
           </section>
+
         </main>
         <Footer />
       </>
@@ -223,6 +236,7 @@ return {
 
   return (
     <>
+      {toast.show && <div className="toast-notification">{toast.message}</div>}
       <Navbar />
       <main className="container">
         <section className="appointments-section">
@@ -294,6 +308,7 @@ return {
             </div>
           )}
         </section>
+
         <div className="scheduleAppointment-container">
           <button
             className="scheduleAppointment-btn"

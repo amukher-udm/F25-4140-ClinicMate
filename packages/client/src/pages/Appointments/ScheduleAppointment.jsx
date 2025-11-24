@@ -40,6 +40,12 @@ export default function ScheduleAppointmentPage() {
     insuranceId: '',
   });
 
+  const [toast, setToast] = useState({ show: false, message: '' }); // Toast state
+  const showToast = (message) => { // Toast trigger function
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: '' }), 3000); // disappears after 3 sec
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -170,6 +176,10 @@ export default function ScheduleAppointmentPage() {
       console.log('✅ Appointment created:', response);
       
       setSuccess(true);
+
+      const scheduledTime = availableSlots.find(s => s.id === selectedSlotId)?.slot_start;
+      showToast(`Appointment scheduled for ${formData.preferredDate} at ${scheduledTime}`);
+
     } catch (error) {
       console.error('❌ Error submitting appointment:', error);
       alert(`Failed to schedule appointment: ${error.message || 'Please try again.'}`);
@@ -256,6 +266,9 @@ export default function ScheduleAppointmentPage() {
 
   return (
     <>
+
+      {toast.show && <div className="toast-notification">{toast.message}</div>}
+      
       <Navbar />
       <main className="schedule-page">
         <div className="schedule-content">
