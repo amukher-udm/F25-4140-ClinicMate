@@ -13,6 +13,10 @@ const transporter = nodemailer.createTransport({
 export const sendAppointmentUpdate = async (userEmail, type, details) => {
   let subject = "";
   let text = "";
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn("Email credentials are not set. Skipping email notification.");
+    return;
+  }
   const locationInfo = details.hospitalName
     ? `\nLocation:\n ${details.hospitalName}\n${details.address}`
     : "";
