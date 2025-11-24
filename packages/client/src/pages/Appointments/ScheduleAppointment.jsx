@@ -53,6 +53,14 @@ export default function ScheduleAppointmentPage() {
       return;
     }
 
+    const adminID = user?.patientId
+    console.log('User role:', adminID);
+
+    if (adminID === 74){
+      navigate('/admin');
+      return;
+    }
+
     const loadData = async () => {
       try {
         const token = getToken();
