@@ -1,11 +1,11 @@
 import './AppointmentPage.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../state/AuthContext';
 import { listAppointments, cancelAppointment, rescheduleAppointment, getSlots } from '../../api/appointments';
-import AvailabilityCalendar from '../../components/AppointmentCalendar/AvailabilityCalendar';
+import AvailabilityCalendar from '../../components//AppointmentCalendar/AvailabilityCalendar';
 
 export default function AppointmentPage() {
   const { user, loading: authLoading, getToken } = useAuth();
@@ -20,6 +20,13 @@ export default function AppointmentPage() {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedSlotId, setSelectedSlotId] = useState('');
   const [loadingSlots, setLoadingSlots] = useState(false);
+  
+  // NEW: Search and sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('date'); // date, doctor, hospital, status
+  const [sortOrder, setSortOrder] = useState('desc'); // asc or desc
+  const [listKey, setListKey] = useState(0); // Force re-render for animations
+  
   const navigate = useNavigate();
 
   //Toast Notification State & Trigger
@@ -87,6 +94,11 @@ export default function AppointmentPage() {
       fetchSlots();
     }
   }, [newDate, showRescheduleModal, selectedAppointment]);
+
+  // Trigger animation when sort or search changes
+  useEffect(() => {
+    setListKey(prev => prev + 1);
+  }, [sortBy, sortOrder, searchQuery, filter]);
 
   const handleCancelAppointment = async () => {
     try {
@@ -169,7 +181,7 @@ export default function AppointmentPage() {
 
       const specialty = apt.doctor?.specialty?.specialty_name || 'General Practice';
 
-return {
+      return {
         id: apt.id,
         appointmentId: apt.id,
         provider_id: apt.provider_id,
@@ -181,6 +193,7 @@ return {
         hospitalAddress: hospitalAddress,
         time: `${timeStr} ${dateStr}`,
         date: date,
+        dateObj: dateObj, // Keep for sorting
         startTime: startTime,
         endTime: endTime,
         status: apt.status ? apt.status.charAt(0).toUpperCase() + apt.status.slice(1) : 'Unknown',
@@ -200,19 +213,59 @@ return {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  const formattedAppointments = formatAppointments(appointments);
+  // Filter, search, and sort appointments
+  const processedAppointments = useMemo(() => {
+    let result = formatAppointments(appointments);
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(apt => 
+        apt.doctor.toLowerCase().includes(query) ||
+        apt.hospital.toLowerCase().includes(query) ||
+        apt.specialty.toLowerCase().includes(query) ||
+        apt.time.toLowerCase().includes(query) ||
+        apt.status.toLowerCase().includes(query) ||
+        (apt.notes && apt.notes.toLowerCase().includes(query))
+      );
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'date':
+          comparison = (a.dateObj || 0) - (b.dateObj || 0);
+          break;
+        case 'doctor':
+          comparison = a.doctor.localeCompare(b.doctor);
+          break;
+        case 'hospital':
+          comparison = a.hospital.localeCompare(b.hospital);
+          break;
+        case 'status':
+          comparison = a.status.localeCompare(b.status);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [appointments, searchQuery, sortBy, sortOrder, user]);
 
   if (authLoading || loading) {
     return (
       <>
-        
         <Navbar />
         <main className="container">
           <section className="appointments-section">
             <h1 className="appointments-title">My Appointments</h1>
             <p>Loading your appointments...</p>
           </section>
-
         </main>
         <Footer />
       </>
@@ -250,7 +303,58 @@ return {
               type="text"
               placeholder="Search appointments..."
               className="appointments-search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
+            
+            {/* Sort dropdown */}
+            <div className="appointments-sort">
+              <label htmlFor="sort-by" style={{ marginRight: '0.5rem', fontSize: '0.9rem', color: 'var(--slate-600)' }}>
+                Sort by:
+              </label>
+              <select 
+                id="sort-by"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  padding: '0.5rem',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  marginRight: '0.5rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="date">Date</option>
+                <option value="doctor">Doctor</option>
+                <option value="hospital">Hospital</option>
+                <option value="status">Status</option>
+              </select>
+              
+              <button
+                onClick={() => {
+                  setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                  // Add rotation animation class
+                  const btn = document.querySelector('.sort-toggle-btn');
+                  if (btn) {
+                    btn.classList.add('rotating');
+                    setTimeout(() => btn.classList.remove('rotating'), 300);
+                  }
+                }}
+                className="sort-toggle-btn"
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem'
+                }}
+                title={sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'}
+              >
+                {sortOrder === 'asc' ? '↑' : '↓'}
+              </button>
+            </div>
+            
             <div className="appointments-filters">
               {['all', 'scheduled', 'completed', 'cancelled'].map(tab => (
                 <button
@@ -264,24 +368,37 @@ return {
             </div>
           </div>
 
-          {formattedAppointments.length === 0 ? (
-            <div className="appointments-list">
+          {/* Results count */}
+          {searchQuery && (
+            <p className="search-results-count" style={{ color: 'var(--slate-600)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Found {processedAppointments.length} result{processedAppointments.length !== 1 ? 's' : ''} for "{searchQuery}"
+            </p>
+          )}
+
+          {processedAppointments.length === 0 ? (
+            <div className="appointments-list" key={listKey}>
               <p style={{ textAlign: 'center', color: 'var(--slate-600)', padding: '2rem' }}>
-                No {filter !== 'all' ? filter : ''} appointments found.
+                {searchQuery 
+                  ? `No appointments found matching "${searchQuery}"`
+                  : `No ${filter !== 'all' ? filter : ''} appointments found.`
+                }
               </p>
             </div>
           ) : (
-            <div className="appointments-list">
-              {formattedAppointments.map(a => (
+            <div className="appointments-list" key={listKey}>
+              {processedAppointments.map((a, index) => (
                 <div 
                   key={a.id} 
                   className="appointment-card"
+                  style={{ 
+                    cursor: (a.status === 'Scheduled' || a.status === 'Pending') ? 'pointer' : 'default',
+                    animationDelay: `${Math.min(index * 0.05, 0.5)}s`
+                  }}
                   onClick={() => {
                     if(a.status === 'Scheduled' || a.status === 'Pending') {
                       setSelectedAppointment(a);
                     }
                   }}
-                  style={{ cursor: (a.status === 'Scheduled' || a.status === 'Pending') ? 'pointer' : 'default' }}
                 >
                   <div className="appointment-info">
                     <div>
