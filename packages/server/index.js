@@ -14,7 +14,6 @@ const app = express(); // initilize express app
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV !== "production";
 
-
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -709,7 +708,7 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
   if (update_error) {
     return res.status(400).json({ error: update_error.message });
   }
-  const { error: insert_error } = await req.supabase
+  const { data: appointment, error: insert_error } = await req.supabase
     .from("appointments")
     .insert({
       notes: reason,
@@ -731,17 +730,21 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
     return res.status(400).json({ error: insert_error.message });
   }
   // Get patient email and notify preference
-  const { data: patientData, error: patientError } = await req.supabase
+  const { data: patientData } = await req.supabase
     .from("patients")
-    .select("email, notify_email") // Assuming you added email to patients or join auth.users
+    .select("email, notify_email")
     .eq("user_id", appointment.user_id)
     .single();
-  const { data: hospital, error: hospitalError } = await req.supabase
+  const { data: hospital } = await req.supabase
     .from("hospitals")
     .select("*")
-    .eq("id", appointment.provider_id)
+    .eq("hospital_id", appointment.provider_id)
     .maybeSingle();
-
+  const { data: slotData } = await req.supabase
+    .from("provider_availability")
+    .select("*")
+    .eq("id", appointment.slot_id)
+    .maybeSingle();
   if (patientData && patientData.notify_email && hospital) {
     // Send email notification
     await sendAppointmentUpdate(patientData.email, "created", {
@@ -802,7 +805,8 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
     .from("provider_availability")
     .update({ is_booked: false })
     .eq("id", appointment.slot_id)
-    .select();
+    .select()
+    .maybeSingle();
   if (slotError) {
     return res.status(400).json({ "Error freeing slot:": slotError.message });
   }
@@ -812,15 +816,15 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
       .json({ error: "Associated slot not found to free up" });
   }
   // Get patient email and notify preference
-  const { data: patientData, error: patientError } = await req.supabase
+  const { data: patientData } = await req.supabase
     .from("patients")
     .select("email, notify_email") // Assuming you added email to patients or join auth.users
     .eq("user_id", appointment.user_id)
     .single();
-  const { data: hospital, error: hospitalError } = await req.supabase
+  const { data: hospital } = await req.supabase
     .from("hospitals")
     .select("*")
-    .eq("id", appointment.provider_id)
+    .eq("hospital_id", appointment.provider_id)
     .maybeSingle();
 
   if (patientData && patientData.notify_email && hospital) {
@@ -918,15 +922,14 @@ app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
   // Get patient email and notify preference
   const { data: patientData } = await req.supabase
     .from("patients")
-    .select("email, notify_email") // Assuming you added email to patients or join auth.users
+    .select("email, notify_email")
     .eq("user_id", appointment.user_id)
     .single();
   const { data: hospital } = await req.supabase
     .from("hospitals")
     .select("*")
-    .eq("id", appointment.provider_id)
+    .eq("hospital_id", appointment.provider_id)
     .maybeSingle();
-
   if (patientData && patientData.notify_email && hospital) {
     // Send email notification
     await sendAppointmentUpdate(patientData.email, "rescheduled", {
@@ -990,7 +993,7 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
   // Get patient email and notify preference
   const { data: patientData, error: patientError } = await req.supabase
     .from("patients")
-    .select("email, notify_email") // Assuming you added email to patients or join auth.users
+    .select("email, notify_email")
     .eq("user_id", appointment.user_id)
     .single();
   const { data: hospital, error: hospitalError } = await req.supabase
