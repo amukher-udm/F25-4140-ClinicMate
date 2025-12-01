@@ -85,6 +85,18 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false)
+
+  const openProfile = (item) => {
+    setSelectedProfile(item);
+    setShowProfileModal(true);
+  }
+
+  const closeProfile = () =>{
+    setSelectedProfile(null);
+    setShowProfileModal(false);
+  }
 
   // Load data on mount - no auth required
   useEffect(() => {
@@ -248,12 +260,49 @@ export default function ExplorePage() {
                     </p>
                   )}
 
-                  <button className="btn btn-secondary">View Profile</button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => openProfile(item)}
+                  >
+                    View Profile
+                  </button>
                 </div>
               );
             })
           )}
         </section>
+
+                {showProfileModal && selectedProfile && (
+          <div className="modal-backdrop" onClick={closeProfile}>
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="modal-close" onClick={closeProfile}>
+                ✖
+              </button>
+
+              <h2>{getDisplayName(selectedProfile)}</h2>
+              <p><strong>Specialty:</strong> {getDisplaySpecialty(selectedProfile)}</p>
+              <p><strong>Location:</strong> {formatLocation(selectedProfile)}</p>
+
+              {getDisplayEmail(selectedProfile) && (
+                <p><strong>Email:</strong> {getDisplayEmail(selectedProfile)}</p>
+              )}
+              {getDisplayPhone(selectedProfile) && (
+                <p><strong>Phone:</strong> {getDisplayPhone(selectedProfile)}</p>
+              )}
+
+              {/* Schedule button */}
+              <button
+                className="btn btn-primary"
+                onClick={() => (window.location.href = "/Schedule")}
+              >
+                Schedule Appointment
+              </button>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </>

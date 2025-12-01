@@ -17,6 +17,7 @@ import Terms from './pages/Legal/Terms.jsx';
 import AppointmentPage from './pages/Appointments/AppointmentPage.jsx';
 import ScheduleAppointment from './pages/Appointments/ScheduleAppointment.jsx';
 import TestAppointments from './pages/TestDashboard/TestAppointments.jsx';
+import AdminDashboard from './pages/Appointments/AdminDashboard.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/appointments" element={<AppointmentPage />} />
             <Route path="/Schedule" element={<ScheduleAppointment />} />
             <Route path="/test" element={<TestAppointments />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </Router>
       </AppointmentProvider>

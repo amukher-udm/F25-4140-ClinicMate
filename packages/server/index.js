@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { sendAppointmentUpdate } from "./notificationService.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config(); //configures process.env from .env file
@@ -66,7 +67,7 @@ const checkAuth = async (req, res, next) => {
 
     // Attach user info to the request and proceed
     req.user = user;
-    
+
     next();
   } catch (error) {
     console.error("Unexpected error in auth middleware:", error);
@@ -319,8 +320,9 @@ app.get("/api/profile_data", checkAuth, async (req, res) => {
 app.put("/api/update_profile", checkAuth, async (req, res) => {
   const { first_name, last_name, phone_number, gender, middle_initial } =
     req.body;
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   const { error: updateError } = await req.supabase
     .from("patients")
@@ -354,8 +356,9 @@ app.put("/api/update_profile", checkAuth, async (req, res) => {
  */
 app.put("/api/update_address", checkAuth, async (req, res) => {
   const { street, city, state, zip_code } = req.body;
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   try {
     console.log("Updating address:", { street, city, state, zip_code });
@@ -529,7 +532,6 @@ app.get("/api/provider_availability/:id/slots", async (req, res) => {
  * - none
  */
 app.get("/api/provider_availability", async (req, res) => {
-
   const { data: available_times, error } = await supabase
     .from("provider_availability")
     .select(
@@ -538,15 +540,13 @@ app.get("/api/provider_availability", async (req, res) => {
         name,
         address: address_id(*)
         )`
-      )
+    );
   if (error) {
     console.error("Error fetching provider availability:", error);
     return res.status(500).json({ error: error.message });
   }
   res.json(available_times);
 });
-
-
 
 /**
  * GET /api/appointments
@@ -565,13 +565,15 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   const statusFilter = req.query.status; // all, scheduled, completed, cancelled
   const sortBy = req.query.sort_by;
   const order = req.query.order === "asc";
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   // Build the query
   let query = req.supabase
     .from("appointments")
-    .select(`
+    .select(
+      `
       *,
       reason: notes,
       slot: provider_availability!slot_id (
@@ -584,7 +586,8 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
         name,
         address: address_id(*)
       )
-    `)
+    `
+    )
     .eq("user_id", req.user.id);
 
   if (statusFilter && statusFilter !== "all") {
@@ -628,7 +631,8 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   // 3) Fetch doctors for those hospitals, including specialty
   const { data: doctorRows, error: doctorError } = await req.supabase
     .from("doctors")
-    .select(`
+    .select(
+      `
       doctor_id,
       first_name,
       last_name,
@@ -638,7 +642,8 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
       specialty: specialty_id (
         specialty_name
       )
-    `)
+    `
+    )
     .in("hospital_id", hospitalIds);
 
   if (doctorError) {
@@ -663,7 +668,6 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
   res.json({ data: enrichedAppointments });
 });
 
-
 /**
  * POST /api/appointments
  * Description:
@@ -682,8 +686,9 @@ app.get("/api/appointments", checkAuth, async (req, res) => {
 app.post("/api/appointments", checkAuth, async (req, res) => {
   const { reason, visit_type, slot_id } = req.body;
   const user_id = req.user.id;
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   const { data: slot, error: slotError } = await req.supabase
     .from("provider_availability")
@@ -703,7 +708,7 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
   if (update_error) {
     return res.status(400).json({ error: update_error.message });
   }
-  const { error: insert_error } = await req.supabase
+  const { data: appointment, error: insert_error } = await req.supabase
     .from("appointments")
     .insert({
       notes: reason,
@@ -712,7 +717,9 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
       user_id,
       slot_id,
       provider_id: slot.provider_id,
-    });
+    })
+    .select()
+    .maybeSingle();
 
   if (insert_error) {
     console.error("Appointment insert failed, rolling back slot...");
@@ -721,6 +728,31 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
       .update({ is_booked: false })
       .eq("id", slot_id);
     return res.status(400).json({ error: insert_error.message });
+  }
+  // Get patient email and notify preference
+  const { data: patientData } = await req.supabase
+    .from("patients")
+    .select("email, notify_email")
+    .eq("user_id", appointment.user_id)
+    .single();
+  const { data: hospital } = await req.supabase
+    .from("hospitals")
+    .select("*")
+    .eq("hospital_id", appointment.provider_id)
+    .maybeSingle();
+  const { data: slotData } = await req.supabase
+    .from("provider_availability")
+    .select("*")
+    .eq("id", appointment.slot_id)
+    .maybeSingle();
+  if (patientData && patientData.notify_email && hospital) {
+    // Send email notification
+    await sendAppointmentUpdate(patientData.email, "created", {
+      date: slotData.date,
+      time: slotData.slot_start,
+      hospitalName: hospital.hospital_name,
+      address: hospital.address,
+    });
   }
   res.json({ message: "Appointment created successfully" });
 });
@@ -739,12 +771,13 @@ app.post("/api/appointments", checkAuth, async (req, res) => {
  */
 app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   const { data: appointment, error: fetch_error } = await req.supabase
     .from("appointments")
-    .select("slot_id, status")
+    .select("slot_id, status, user_id, provider_id")
     .eq("id", appointmentId)
     .maybeSingle();
   if (fetch_error) {
@@ -772,7 +805,8 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
     .from("provider_availability")
     .update({ is_booked: false })
     .eq("id", appointment.slot_id)
-    .select();
+    .select()
+    .maybeSingle();
   if (slotError) {
     return res.status(400).json({ "Error freeing slot:": slotError.message });
   }
@@ -780,6 +814,27 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
     return res
       .status(404)
       .json({ error: "Associated slot not found to free up" });
+  }
+  // Get patient email and notify preference
+  const { data: patientData } = await req.supabase
+    .from("patients")
+    .select("email, notify_email") // Assuming you added email to patients or join auth.users
+    .eq("user_id", appointment.user_id)
+    .single();
+  const { data: hospital } = await req.supabase
+    .from("hospitals")
+    .select("*")
+    .eq("hospital_id", appointment.provider_id)
+    .maybeSingle();
+
+  if (patientData && patientData.notify_email && hospital) {
+    // Send email notification
+    await sendAppointmentUpdate(patientData.email, "cancelled", {
+      date: slotData.date,
+      time: slotData.slot_start,
+      hospitalName: hospital.hospital_name,
+      address: hospital.address,
+    });
   }
   res.json({ message: "Appointment cancelled successfully" });
 });
@@ -803,8 +858,9 @@ app.patch("/api/appointments/:id/cancel", checkAuth, async (req, res) => {
 app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
   const { new_slot_id } = req.body;
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   if (!new_slot_id) {
     return res.status(400).json({ error: "Missing new_slot_id in body" });
@@ -863,6 +919,26 @@ app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
   if (!new_slot || new_slot.length === 0) {
     return res.status(404).json({ error: "New slot not found to book" });
   }
+  // Get patient email and notify preference
+  const { data: patientData } = await req.supabase
+    .from("patients")
+    .select("email, notify_email")
+    .eq("user_id", appointment.user_id)
+    .single();
+  const { data: hospital } = await req.supabase
+    .from("hospitals")
+    .select("*")
+    .eq("hospital_id", appointment.provider_id)
+    .maybeSingle();
+  if (patientData && patientData.notify_email && hospital) {
+    // Send email notification
+    await sendAppointmentUpdate(patientData.email, "rescheduled", {
+      date: new_slot_data.date,
+      time: new_slot_data.slot_start,
+      hospitalName: hospital.hospital_name,
+      address: hospital.address,
+    });
+  }
   res.json({ message: "Appointment rescheduled successfully" });
 });
 
@@ -886,8 +962,9 @@ app.patch("/api/appointments/:id/reschedule", checkAuth, async (req, res) => {
 app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
   const appointmentId = req.params.id;
   const { visit_type, reason } = req.body;
-  if(req.user.role=="admin"&&req.body.user_id){//Allow admins to use api differently
-      req.user.id=req.body.user_id
+  if (req.user.role == "admin" && req.body.user_id) {
+    //Allow admins to use api differently
+    req.user.id = req.body.user_id;
   }
   if (!visit_type && !reason) {
     return res
@@ -902,7 +979,8 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
       .from("appointments")
       .update(updates)
       .eq("id", appointmentId)
-      .select();
+      .select()
+      .maybeSingle();
 
   if (appointment_update_error) {
     return res.status(400).json({ error: appointment_update_error.message });
@@ -912,9 +990,33 @@ app.patch("/api/appointments/:id/update", checkAuth, async (req, res) => {
       .status(404)
       .json({ error: "Appointment not found or permission denied" });
   }
+  // Get patient email and notify preference
+  const { data: patientData, error: patientError } = await req.supabase
+    .from("patients")
+    .select("email, notify_email")
+    .eq("user_id", appointment.user_id)
+    .single();
+  const { data: hospital, error: hospitalError } = await req.supabase
+    .from("hospitals")
+    .select("*")
+    .eq("hospital_id", appointment.provider_id)
+    .maybeSingle();
+  const { data: slotData } = await req.supabase
+    .from("provider_availability")
+    .select("*")
+    .eq("id", appointment.slot_id)
+    .maybeSingle();
+  if (patientData && patientData.notify_email && hospital) {
+    // Send email notification
+    await sendAppointmentUpdate(patientData.email, "updated", {
+      date: slotData.date,
+      time: slotData.slot_start,
+      hospitalName: hospital.hospital_name,
+      address: hospital.address,
+    });
+  }
   res.json({ message: "Appointment updated successfully" });
 });
-
 
 /**
  * GET /api/admin/appointments
@@ -934,10 +1036,8 @@ app.get("/api/admin/appointments", checkAuth, async (req, res) => {
   const sortBy = req.query.sort_by;
   const order = req.query.order === "asc";
   // Build the query
-  let query = req.supabase
-    .from("appointments")
-    .select(
-      `
+  let query = req.supabase.from("appointments").select(
+    `
         *,
         reason: notes,
         slot: provider_availability!slot_id (
@@ -950,8 +1050,8 @@ app.get("/api/admin/appointments", checkAuth, async (req, res) => {
         address: address_id(*)
         )
       `
-    )
-    
+  );
+
   if (statusFilter && statusFilter !== "all") {
     query = query.eq("status", statusFilter);
   }
@@ -982,93 +1082,90 @@ app.get("/api/admin/appointments", checkAuth, async (req, res) => {
   res.json({ data });
 });
 
-
 /**
  * GET /api/admin/insert_availability
  * Description:
  * inserts new provider availability slots into the provider_availability table
  *
  * Request Body:
- * - provider_id (uuid, required): ID of the provider 
+ * - provider_id (uuid, required): ID of the provider
  * - date (string, required): Date for the availability slot (format: YYYY-MM-DD)
  * - slot_start (string, required): Start time of the slot (format: HH:MM:SS)
  * - slot_end (string, required): End time of the slot (format: HH:MM:SS)
- * 
- * 
+ *
+ *
  * - Success: { message: "Availability created successfully" }
  * - Failure: { error: "Error message" }
  */
 
 app.post("/api/admin/insert_availability", checkAuth, async (req, res) => {
-  if(req.user.role != "admin") { 
+  if (req.user.role != "admin") {
     return res.status(400).json({ error: "Not Allowed: Admins only" });
   }
-  const {provider_id, date, slot_start, slot_end} = req.body; 
+  const { provider_id, date, slot_start, slot_end } = req.body;
 
-  if(!provider_id ||!date || !slot_start || !slot_end) {
+  if (!provider_id || !date || !slot_start || !slot_end) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
   try {
-    const {data, error} = await req.supabase 
+    const { data, error } = await req.supabase
       .from("provider_availability")
       .insert({
-        provider_id, 
-        date, 
+        provider_id,
+        date,
         slot_start,
-        slot_end, 
-        is_booked: false
-      })
-      if (error)
-      {
-        console.error("Error inserting availability:", error);
-        return res.status(400).json({ error: error.message });
-      }
+        slot_end,
+        is_booked: false,
+      });
+    if (error) {
+      console.error("Error inserting availability:", error);
+      return res.status(400).json({ error: error.message });
+    }
 
-      res.json({ message: "Availability created successfully" }); 
+    res.json({ message: "Availability created successfully" });
   } catch (err) {
     console.error("Unexpected error inserting availability:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
-
 });
 
 /**
  * GET /api/admin/delete_availability
  * Description:
  * Admin can delete an availablity slot by ID
- * 
- * URL Parameters: 
+ *
+ * URL Parameters:
  * - id (uuid): ID of the availability slot to delete
- * 
+ *
  * - Success: { message: "Availability deleted successfully" }
  * - Failure: { error: "Error message" }
  */
 
 app.delete("/api/admin/delete_availability", checkAuth, async (req, res) => {
-  if(req.user.role != "admin") { 
+  if (req.user.role != "admin") {
     return res.status(400).json({ error: "Not Allowed: Admins only" });
-  } 
+  }
 
   const slotId = req.query.id;
 
   try {
-    const {data, error} = await req.supabase
+    const { data, error } = await req.supabase
       .from("provider_availability")
       .delete()
-      .eq("id", slotId)
+      .eq("id", slotId);
 
-      if (error) {
-        console.error("Error deleting availability:" , error);
-        return res.status(400).json({error: error.message });
-      }
-
-      res.json({message: "Availability deleted successfully"})
-    } catch (error) { 
+    if (error) {
       console.error("Error deleting availability:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }  
-  }); 
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ message: "Availability deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting availability:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // Start the server
 if (isDev) {
