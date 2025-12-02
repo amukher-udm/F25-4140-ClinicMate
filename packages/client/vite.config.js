@@ -10,6 +10,10 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true
       }
-    }
+    },
+    allowedHosts: [
+          'f25-4140-clinicmate-backend.onrender.com',
+          // Add other allowed hosts if necessary
+    ],
   }
 });
