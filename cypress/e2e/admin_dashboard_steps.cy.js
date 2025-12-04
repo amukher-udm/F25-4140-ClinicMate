@@ -1,6 +1,3 @@
-// cypress/e2e/appointments/appointment-navigation.steps.js
-import { Given, When, Then } from '@badeball/cypress-cucumber-preprocessor';
-
 Cypress.Commands.add("loginAsAdmin", () => {
   cy.visit("http://localhost:3000/login");
 
@@ -27,4 +24,3 @@ it("I'm able to log in as admin", () => {
 
 });
 
-``

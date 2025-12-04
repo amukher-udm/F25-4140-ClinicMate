@@ -27,21 +27,16 @@ it("should navigate all appointments", () => {
   cy.loginAsUser();
   cy.visit("http://localhost:3000/Appointments");
 
-  // --- Scheduled Tab ---
   cy.contains("button", "Scheduled").click();
 
-  // Should show at least 1 scheduled appointment
   cy.get(".appointment-card").should("exist");
 
-  // --- Completed Tab ---
   cy.contains("button", "Completed").click();
 
-  // "No completed appointments found."
   cy.contains("No completed appointments found.").should("exist");
 
-  // --- Cancelled Tab ---
   cy.contains("button", "Cancelled").click();
-  cy.wait(1000)
+  cy.wait(1000) // Noticed there's an animation where all cards are briefly visible, messing with the click function. Added a delay
 
   cy.get(".appointments-list").should("exist");
 });
@@ -53,7 +48,7 @@ it("should reschedule the scheduled appointment to December 4th", () => {
   // --- Click Scheduled tab ---
   cy.contains("button", "Scheduled").click();
 
-  cy.wait(1000); // Noticed there's an animation where all cards are briefly visible, messing with the click function. Added a slight delay
+  cy.wait(1000); // Noticed there's an animation where all cards are briefly visible, messing with the click function. Added a delay
 
   cy.get(".appointment-card").first().click();
 
@@ -76,12 +71,10 @@ it('clicks an appointment and cancels it', () => {
 
     cy.get(".appointment-card").first().click();
 
-    // Click Delete
     cy.contains('button', /^Cancel$/).click();
     cy.contains('button', /^Cancel Appointment$/).click();
     cy.contains('No scheduled appointments found.').should('exist');
 
-    // To confirm, check Cancelled tab
     cy.contains('button', 'Cancelled').click();
 
   });
