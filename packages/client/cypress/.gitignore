@@ -1,0 +1,14 @@
+# Cypress artifacts
+cypress/videos
+cypress/screenshots
+cypress/downloads
+
+# Test results
+cypress/results
+
+# Node modules (if present)
+node_modules
+
+# OS files
+.DS_Store
+Thumbs.db

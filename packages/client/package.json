@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "cypress run"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": "cypress/e2e/step_definitions/**/*.js"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -15,7 +21,10 @@
     "router": "^2.2.0"
   },
   "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^24.0.0",
+    "@bahmutov/cypress-esbuild-preprocessor": "^2.2.8",
     "@vitejs/plugin-react": "^4.2.1",
+    "cypress": "^15.7.1",
     "vite": "^5.0.11"
   }
 }
