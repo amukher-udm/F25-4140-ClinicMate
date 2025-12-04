@@ -13,7 +13,6 @@ Cypress.Commands.add("loginAsUser", () => {
   cy.log("User logged in");
 });
 
-
 describe("Appointments Page - Navigation Tests", () => {
 
 it("loads the appointments page", () => {
@@ -57,7 +56,7 @@ it("should reschedule the scheduled appointment to December 4th", () => {
   cy.contains("4").click();
   cy.get('#timeSlot') // Previously, the select had no id, now it does making it easier to grab
   .should('be.visible')
-  .select('10:30 A.M - 11:00 A.M')
+  .select('11:00 A.M - 11:30 A.M')
   cy.contains("Save Changes").click(); 
 
 });
