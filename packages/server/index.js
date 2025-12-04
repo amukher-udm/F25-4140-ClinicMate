@@ -1,32 +1,29 @@
-import express from "express";
-import path from "path";
-import ViteExpress from "vite-express";
-import dotenv from "dotenv";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createClient } from "@supabase/supabase-js";
-import { sendAppointmentUpdate } from "./notificationService.js";
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const express = require("express");
+const path = require("path");
+const ViteExpress = require("vite-express");
+const dotenv = require("dotenv");
+const { createClient } = require("@supabase/supabase-js");
 
-dotenv.config(); //configures process.env from .env file
+// Node globals for CJS
+const __filename = __filename;
+const __dirname = __dirname;
 
-const app = express(); // initilize express app
+// Load environment variables
+dotenv.config();
+
+const app = express();
 const PORT = process.env.PORT || 3000;
-const isDev = process.env.NODE_ENV !== "production";
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- SUPABASE CLIENT INITIALIZATION ---
-// Create a single Supabase client for interacting with your database
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase URL or Anon Key is missing. Check .env file.");
-  process.exit(1);
-}
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
 
 /**
  * Middleware to check authentication for protected routes.
@@ -1193,3 +1190,4 @@ if (isDev) {
     console.log(`Server running on Port:${PORT}`);
   });
 }
+export default app;
