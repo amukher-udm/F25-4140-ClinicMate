@@ -577,7 +577,7 @@ export default function AppointmentPage() {
                   ) : availableSlots.length === 0 ? (
                     <p>No available slots for this date</p>
                   ) : (
-                    <select
+                    <select id="timeSlot"
                       value={selectedSlotId}
                       onChange={(e) => setSelectedSlotId(e.target.value)}
                     >
