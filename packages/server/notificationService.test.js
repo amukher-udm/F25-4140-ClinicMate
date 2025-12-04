@@ -1,15 +1,6 @@
 import { sendAppointmentUpdate } from "./notificationService.js";
 import nodemailer from "nodemailer";
 
-// const mockSendMail = jest.fn().mockResolvedValue("Email sent");
-
-// Mock nodemailer
-// jest.mock("nodemailer", () => ({
-//   createTransport: jest.fn().mockReturnValue({
-//     sendMail: mockSendMail,
-//   }),
-// }));
-
 jest.mock("nodemailer", () => {
   const internalMockSendMail = jest.fn().mockResolvedValue("Email sent");
   return {
